@@ -1,0 +1,30 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+
+jobs:
+  expo:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Repo'yu çek
+      uses: actions/checkout@v4
+
+    - name: Node kur
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Dependencies yükle
+      working-directory: frontend/ChronicTrackApp
+      run: npm install
+
+    - name: Lint kontrolü
+      working-directory: frontend/ChronicTrackApp
+      run: npm run lint || echo "lint yok"
+
+    - name: Expo proje kontrolü
+      working-directory: frontend/ChronicTrackApp
+      run: npx expo doctor
