@@ -27,4 +27,4 @@ jobs:
 
     - name: Expo proje kontrolü
       working-directory: frontend/ChronicTrackApp
-      run: npx expo doctor
+      run: npx expo-doctor
