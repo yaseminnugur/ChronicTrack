@@ -19,6 +19,7 @@ export interface CustomButtonProps extends TouchableOpacityProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   rightIcon?: ReactNode;
+  leftIcon?: ReactNode;
 }
 
 export function CustomButton({
@@ -29,6 +30,7 @@ export function CustomButton({
   textStyle,
   disabled,
   rightIcon,
+  leftIcon,
   ...rest
 }: CustomButtonProps) {
   const theme = useColorScheme() ?? 'light';
@@ -60,6 +62,7 @@ export function CustomButton({
         <ActivityIndicator color={getTextColor()} />
       ) : (
         <View style={styles.buttonContent}>
+          {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
           <ThemedText
             style={[
               styles.title,
