@@ -18,11 +18,11 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<'Kan Şekeri' | 'Tansiyon'>('Kan Şekeri');
 
   const handleAddBloodSugar = () => {
-    router.push('/(data-entry)/diabetes');
+    router.push('/add-diabetes');
   };
 
   const handleAddBloodPressure = () => {
-    router.push('/(data-entry)/bloodPressure');
+    router.push('/add-bloodPressure');
   };
 
   return (

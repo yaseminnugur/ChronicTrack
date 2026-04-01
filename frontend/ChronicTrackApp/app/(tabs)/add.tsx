@@ -21,7 +21,7 @@ export default function AddMeasurementScreen() {
         <TouchableOpacity 
           style={styles.card} 
           activeOpacity={0.8}
-          onPress={() => router.push('/(data-entry)/diabetes')}
+          onPress={() => router.push('/add-diabetes')}
         >
           {/* Decorative Background Blob */}
           <View style={[styles.blob, { backgroundColor: '#F0F9FF' }]} />
@@ -46,7 +46,7 @@ export default function AddMeasurementScreen() {
         <TouchableOpacity 
           style={styles.card} 
           activeOpacity={0.8}
-          onPress={() => router.push('/(data-entry)/bloodPressure')}
+          onPress={() => router.push('/add-bloodPressure')}
         >
           {/* Decorative Background Blob */}
           <View style={[styles.blob, { backgroundColor: '#FFF1F2' }]} />
