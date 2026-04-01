@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, SafeAreaView, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -22,9 +23,8 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    // In actual app, validate & login, then:
-    // @ts-ignore
-    router.replace('/(tabs)');
+    // Navigate to onboarding steps
+    router.replace('/(onboarding)/step1');
   };
 
   return (

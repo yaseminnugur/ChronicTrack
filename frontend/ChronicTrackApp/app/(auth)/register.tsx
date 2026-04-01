@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, SafeAreaView, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CustomInput } from '@/components/CustomInput';
@@ -23,9 +24,8 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = () => {
-    // In actual app, validate & register, then go to tabs or login
-    // @ts-ignore
-    router.replace('/(tabs)');
+    // Navigate to onboarding steps
+    router.replace('/(onboarding)/step1');
   };
 
   return (
