@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import AnalysisView from '@/components/AnalysisView';
 
 const MOCK_DATA = [
   {
@@ -69,8 +70,10 @@ export default function DiabetesListScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Big Summary Card */}
-        <View style={styles.summaryCard}>
+        {activeTab === 'Liste' ? (
+          <View>
+            {/* Big Summary Card */}
+            <View style={styles.summaryCard}>
           <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
           <View style={styles.summaryValueRow}>
             <ThemedText style={styles.summaryValue}>104</ThemedText>
@@ -121,6 +124,10 @@ export default function DiabetesListScreen() {
             })}
           </View>
         ))}
+          </View>
+        ) : (
+          <AnalysisView />
+        )}
 
       </ScrollView>
 
