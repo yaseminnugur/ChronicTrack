@@ -128,8 +128,17 @@ export default function Step2Screen() {
           <CustomButton
             title="Devam Et"
             onPress={() => {
-              // Finish onboarding, go to main app
-              router.replace('/(tabs)');
+              if (selectedConditions.includes('Diyabet')) {
+                const hasHyper = selectedConditions.includes('Tansiyon');
+                // @ts-ignore
+                router.push({ pathname: '/(data-entry)/diabetes', params: { next: hasHyper ? 'bloodPressure' : 'tabs' } });
+              } else if (selectedConditions.includes('Tansiyon')) {
+                // @ts-ignore
+                router.push({ pathname: '/(data-entry)/bloodPressure', params: { next: 'tabs' } });
+              } else {
+                // @ts-ignore
+                router.replace('/(tabs)');
+              }
             }}
             style={{ marginBottom: 12 }}
             rightIcon={<Ionicons name="arrow-forward" size={20} color="#FFF" />}
