@@ -1,0 +1,162 @@
+import React, { useState } from 'react';
+import { StyleSheet, View, ScrollView, SafeAreaView, Platform, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { CustomInput } from '@/components/CustomInput';
+import { CustomButton } from '@/components/CustomButton';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { router } from 'expo-router';
+
+const { width } = Dimensions.get('window');
+
+export default function LoginScreen() {
+  const colorScheme = useColorScheme();
+  const theme = colorScheme ?? 'light';
+  const colors = Colors[theme as keyof typeof Colors];
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = () => {
+    // In actual app, validate & login, then:
+    // @ts-ignore
+    router.replace('/(tabs)');
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
+        <View style={styles.header}>
+          {/* Logo Placeholder */}
+          <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+            <FontAwesome5 name="plus" size={24} color="#FFF" />
+          </View>
+          <ThemedText type="title" style={styles.brandName}>
+            ChronicTrack
+          </ThemedText>
+          <ThemedText type="secondary" style={styles.subtitle}>
+            Sağlık yolculuğunuz burada başlıyor.
+          </ThemedText>
+        </View>
+
+        <ThemedView variant="cardBackground" style={styles.card}>
+          <ThemedText type="title" style={styles.cardTitle}>
+            Giriş Yap
+          </ThemedText>
+
+          <CustomInput
+            label="E-posta adresi"
+            iconName="mail"
+            iconType="Ionicons"
+            placeholder="isim@ornek.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+          />
+
+          <CustomInput
+            label="Şifre"
+            iconName="lock-closed"
+            iconType="Ionicons"
+            placeholder="••••••••"
+            isPassword={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            rightLabel="Unuttunuz mu?"
+            rightIconName={showPassword ? 'eye-off' : 'eye'}
+            rightIconType="Ionicons"
+            onRightIconPress={() => setShowPassword(!showPassword)}
+            onRightLabelPress={() => console.log('Forgot password action')}
+          />
+
+          <CustomButton
+            title="Giriş Yap"
+            onPress={handleLogin}
+            style={styles.loginButton}
+          />
+
+          <View style={styles.footerRow}>
+            <ThemedText style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
+              Hesabınız yok mu?{' '}
+            </ThemedText>
+            {/* @ts-ignore */}
+            <ThemedText type="link" onPress={() => router.push('/(auth)/register')}>
+              Kayıt Ol
+            </ThemedText>
+          </View>
+        </ThemedView>
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 20,
+  },
+  logoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: 'rgba(19, 120, 198, 0.3)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  brandName: {
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  card: {
+    width: '100%',
+    borderRadius: 32,
+    padding: 24,
+    paddingTop: 32,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
+    marginBottom: 40,
+  },
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  loginButton: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

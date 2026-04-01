@@ -1,41 +1,50 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Custom color theme for ChronicTrack app.
  */
-
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const primaryBrand = '#1378C6'; // Primary blue from logo and button
+const backgroundLight = '#F2F6FA'; // Light blue-gray background in login screen
+const cardBackground = '#FFFFFF';
+const textPrimary = '#1E1E1E';
+const textSecondary = '#666666';
+const inputBackground = '#F3F4F6';
+const iconColor = '#9E9E9E';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: textPrimary,
+    textSecondary: textSecondary,
+    background: backgroundLight,
+    cardBackground: cardBackground,
+    inputBackground: inputBackground,
+    tint: primaryBrand,
+    primary: primaryBrand,
+    icon: iconColor,
+    tabIconDefault: iconColor,
+    tabIconSelected: primaryBrand,
+    border: '#E5E7EB',
   },
   dark: {
     text: '#ECEDEE',
+    textSecondary: '#A0AAB2',
     background: '#151718',
-    tint: tintColorDark,
+    cardBackground: '#202325',
+    inputBackground: '#2B2F31',
+    tint: primaryBrand,
+    primary: primaryBrand,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: primaryBrand,
+    border: '#3A3F42',
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {

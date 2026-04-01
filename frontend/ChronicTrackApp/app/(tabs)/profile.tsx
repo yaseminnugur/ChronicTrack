@@ -4,19 +4,33 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { CustomButton } from '@/components/CustomButton';
+import { router } from 'expo-router';
 
-export default function HomeScreen() {
+export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
 
+  const handleLogout = () => {
+    // Navigate back to auth flow
+    // @ts-ignore
+    router.replace('/(auth)/login');
+  };
+
   return (
     <ThemedView style={styles.container}>
       <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-        <ThemedText type="title">Hoşgeldiniz!</ThemedText>
-        <ThemedText style={{ marginTop: 10, textAlign: 'center' }}>
-          Giriş başarıyla yapıldı. Burası ana ekran.
+        <ThemedText type="title">Profil</ThemedText>
+        <ThemedText style={{ marginTop: 10, textAlign: 'center', marginBottom: 20 }}>
+          Kullanıcı profil ayarları burada olacak.
         </ThemedText>
+        
+        <CustomButton 
+          title="Çıkış Yap" 
+          variant="outline" 
+          onPress={handleLogout}
+        />
       </View>
     </ThemedView>
   );
