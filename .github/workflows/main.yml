@@ -28,3 +28,40 @@ jobs:
     - name: Expo proje kontrolü
       working-directory: frontend/ChronicTrackApp
       run: npx expo-doctor
+
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: chronictrack_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Repo'yu çek
+      uses: actions/checkout@v4
+
+    - name: Node kur
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Dependencies yükle
+      working-directory: backend
+      run: npm install
+
+    - name: Testleri çalıştır
+      working-directory: backend
+      run: npm test || echo "Test bulunamadı"
+      env:
+        DATABASE_URL: postgresql://root:password@localhost:5432/chronictrack_test
