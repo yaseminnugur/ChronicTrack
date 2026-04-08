@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import userRoutes from './routes/userRoutes.ts';
 
 // Load env variables
 dotenv.config();
@@ -16,6 +17,9 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to ChronicTrack API' });
 });
+
+// API Routes
+app.use('/api/users', userRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
