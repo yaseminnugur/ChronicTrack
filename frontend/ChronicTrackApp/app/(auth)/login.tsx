@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
@@ -10,8 +10,13 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
+
+// Backend URL from environment variables
+const API_URL = process.env.EXPO_PUBLIC_API_URL as string;
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
@@ -21,10 +26,35 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Navigate to onboarding steps
-    router.replace('/(onboarding)/step1');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password,
+      });
+
+      if (response.status === 200) {
+        const { token } = response.data;
+        // Save token
+        await AsyncStorage.setItem('userToken', token);
+        // Navigate to onboarding or tabs
+        router.replace('/(onboarding)/step1');
+      }
+    } catch (error: any) {
+      console.log('Login Error: ', error.message);
+      const message = error.response?.data?.error || 'Giriş yapılamadı.';
+      Alert.alert('Hata', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,6 +86,7 @@ export default function LoginScreen() {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
 
           <CustomInput
@@ -76,6 +107,7 @@ export default function LoginScreen() {
           <CustomButton
             title="Giriş Yap"
             onPress={handleLogin}
+            loading={loading}
             style={styles.loginButton}
           />
 

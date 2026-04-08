@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -9,8 +9,13 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
+
+// Backend URL from environment variables
+const API_URL = process.env.EXPO_PUBLIC_API_URL as string;
 
 export default function RegisterScreen() {
   const colorScheme = useColorScheme();
@@ -22,10 +27,39 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    // Navigate to onboarding steps
-    router.replace('/(onboarding)/step1');
+  const handleRegister = async () => {
+    if (!name || !email || !password || !passwordConfirm) {
+      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.post(`${API_URL}/auth/register`, {
+        name,
+        email,
+        password,
+      });
+
+      if (response.status === 201) {
+        Alert.alert('Başarılı', 'Kayıt işlemi başarılı. Lütfen giriş yapın.', [
+          { text: 'Tamam', onPress: () => router.replace('/(auth)/login') }
+        ]);
+      }
+    } catch (error: any) {
+      console.log('Register Error: ', error.message);
+      const message = error.response?.data?.error || 'Bir hata oluştu.';
+      Alert.alert('Hata', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,6 +100,7 @@ export default function RegisterScreen() {
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
+                autoCapitalize="none"
               />
 
               <CustomInput
@@ -108,6 +143,7 @@ export default function RegisterScreen() {
               <CustomButton
                 title="Kayıt Ol"
                 onPress={handleRegister}
+                loading={loading}
                 style={styles.registerButton}
                 rightIcon={<Ionicons name="arrow-forward" size={18} color="#FFF" />}
               />

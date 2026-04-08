@@ -19,7 +19,10 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+import authRoutes from './routes/authRoutes.ts';
+
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
