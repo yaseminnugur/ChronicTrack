@@ -22,6 +22,7 @@ export interface CustomInputProps extends TextInputProps {
   rightIconType?: 'FontAwesome5' | 'Ionicons' | 'MaterialCommunityIcons';
   onRightIconPress?: () => void;
   isPassword?: boolean;
+  error?: boolean;
 }
 
 export function CustomInput({
@@ -34,6 +35,7 @@ export function CustomInput({
   rightIconType = 'Ionicons',
   onRightIconPress,
   isPassword = false,
+  error = false,
   ...rest
 }: CustomInputProps) {
   const theme = useColorScheme() ?? 'light';
@@ -74,7 +76,7 @@ export function CustomInput({
           styles.inputContainer,
           { 
             backgroundColor: colors.inputBackground,
-            borderColor: isFocused ? colors.primary : colors.inputBackground,
+            borderColor: error ? '#FF3B30' : (isFocused ? colors.primary : colors.inputBackground),
             borderWidth: 1,
           },
         ]}

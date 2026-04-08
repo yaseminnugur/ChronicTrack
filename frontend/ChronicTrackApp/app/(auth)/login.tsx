@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Platform, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { CustomInput } from '@/components/CustomInput';
+import { ControlledInput } from '@/components/ControlledInput';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -12,6 +11,9 @@ import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormData } from '@/validations/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -23,22 +25,23 @@ export default function LoginScreen() {
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
-      return;
-    }
+  const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
     try {
       setLoading(true);
       const response = await axios.post(`${API_URL}/auth/login`, {
-        email,
-        password,
+        email: data.email,
+        password: data.password,
       });
 
       if (response.status === 200) {
@@ -78,25 +81,25 @@ export default function LoginScreen() {
             Giriş Yap
           </ThemedText>
 
-          <CustomInput
+          <ControlledInput
+            control={control}
+            name="email"
             label="E-posta adresi"
             iconName="mail"
             iconType="Ionicons"
             placeholder="isim@ornek.com"
-            value={email}
-            onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
 
-          <CustomInput
+          <ControlledInput
+            control={control}
+            name="password"
             label="Şifre"
             iconName="lock-closed"
             iconType="Ionicons"
             placeholder="••••••••"
             isPassword={!showPassword}
-            value={password}
-            onChangeText={setPassword}
             rightLabel="Unuttunuz mu?"
             rightIconName={showPassword ? 'eye-off' : 'eye'}
             rightIconType="Ionicons"
@@ -106,7 +109,7 @@ export default function LoginScreen() {
 
           <CustomButton
             title="Giriş Yap"
-            onPress={handleLogin}
+            onPress={handleSubmit(onSubmit)}
             loading={loading}
             style={styles.loginButton}
           />

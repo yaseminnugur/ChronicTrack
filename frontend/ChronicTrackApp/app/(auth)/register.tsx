@@ -3,14 +3,16 @@ import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, Touchable
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { CustomInput } from '@/components/CustomInput';
+import { ControlledInput } from '@/components/ControlledInput';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { registerSchema, RegisterFormData } from '@/validations/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -21,31 +23,27 @@ export default function RegisterScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
-  
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
-    if (!name || !email || !password || !passwordConfirm) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun.');
-      return;
-    }
+  const { control, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      passwordConfirm: '',
+    },
+  });
 
-    if (password !== passwordConfirm) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
-      return;
-    }
-
+  const onSubmit = async (data: RegisterFormData) => {
     try {
       setLoading(true);
       const response = await axios.post(`${API_URL}/auth/register`, {
-        name,
-        email,
-        password,
+        name: data.name,
+        email: data.email,
+        password: data.password,
       });
 
       if (response.status === 201) {
@@ -64,8 +62,8 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -83,57 +81,57 @@ export default function RegisterScreen() {
             </View>
 
             <ThemedView variant="cardBackground" style={styles.card}>
-              <CustomInput
+              <ControlledInput
+                control={control}
+                name="name"
                 label="Ad Soyad"
                 iconName="person"
                 iconType="Ionicons"
                 placeholder="Ahmet Yılmaz"
-                value={name}
-                onChangeText={setName}
               />
 
-              <CustomInput
+              <ControlledInput
+                control={control}
+                name="email"
                 label="E-posta"
                 iconName="mail"
                 iconType="Ionicons"
                 placeholder="isim@ornek.com"
-                value={email}
-                onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
 
-              <CustomInput
+              <ControlledInput
+                control={control}
+                name="password"
                 label="Şifre"
                 iconName="lock-closed"
                 iconType="Ionicons"
                 placeholder="••••••••"
                 isPassword={!showPassword}
-                value={password}
-                onChangeText={setPassword}
                 rightIconName={showPassword ? 'eye-off' : 'eye'}
                 rightIconType="Ionicons"
                 onRightIconPress={() => setShowPassword(!showPassword)}
               />
 
-              <CustomInput
+              <ControlledInput
+                control={control}
+                name="passwordConfirm"
                 label="Şifre Tekrar"
                 iconName="shield-checkmark"
                 iconType="Ionicons"
                 placeholder="••••••••"
                 isPassword={true}
-                value={passwordConfirm}
-                onChangeText={setPasswordConfirm}
               />
 
               <View style={styles.termsContainer}>
                 <ThemedText style={[styles.termsText, { color: colors.textSecondary }]}>
                   Kayıt Ol butonuna tıklayarak,{' '}
-                  <ThemedText type="link" onPress={() => console.log('Hizmet Şartları')} style={{fontSize: 12}}>
+                  <ThemedText type="link" onPress={() => console.log('Hizmet Şartları')} style={{ fontSize: 12 }}>
                     Hizmet Şartlarımızı
                   </ThemedText>
                   {' '}ve{' '}
-                  <ThemedText type="link" onPress={() => console.log('Gizlilik Politikası')} style={{fontSize: 12}}>
+                  <ThemedText type="link" onPress={() => console.log('Gizlilik Politikası')} style={{ fontSize: 12 }}>
                     Gizlilik Politikamızı
                   </ThemedText>
                   {' '}kabul etmiş sayılırsınız.
@@ -142,7 +140,7 @@ export default function RegisterScreen() {
 
               <CustomButton
                 title="Kayıt Ol"
-                onPress={handleRegister}
+                onPress={handleSubmit(onSubmit)}
                 loading={loading}
                 style={styles.registerButton}
                 rightIcon={<Ionicons name="arrow-forward" size={18} color="#FFF" />}
