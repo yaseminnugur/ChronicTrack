@@ -12,10 +12,58 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String?
+  weight        Float?
+  height        Float?
+  age           Int?
+  isSmoking     Boolean  @default(false)
+  isOnboarded   Boolean  @default(false)
+  activityLevel String?
+  saltLevel     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bloodPressures BloodPressure[]
+  bloodSugars    BloodSugar[]
+  healthAnalyses HealthAnalysis[]
+}
+
+model BloodPressure {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  systolic   Int
+  diastolic  Int
+  pulse      Int
+  notes      String?  @db.Text
+  measuredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model BloodSugar {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  glucose    Float
+  mealState  String
+  notes      String?  @db.Text
+  measuredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model HealthAnalysis {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisType   String // e.g., "BLOOD_PRESSURE", "BLOOD_SUGAR", "GENERAL_HEALTH"
+  status         String // e.g., "NORMAL", "WARNING", "CRITICAL"
+  score          Int? // 0-100 overall score
+  aiSummary      String   @db.Text
+  recommendation String   @db.Text
+  createdAt      DateTime @default(now())
 }

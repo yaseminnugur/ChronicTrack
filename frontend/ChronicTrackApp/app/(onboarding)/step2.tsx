@@ -7,11 +7,18 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL as string;
 
 export default function Step2Screen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
+  const { userToken, completeOnboarding } = useAuth();
+  const [loading, setLoading] = useState(false);
+
 
   const [selectedConditions, setSelectedConditions] = useState<string[]>(['Tansiyon']);
 
@@ -127,17 +134,32 @@ export default function Step2Screen() {
         <View style={styles.bottomSection}>
           <CustomButton
             title="Devam Et"
-            onPress={() => {
-              if (selectedConditions.includes('Diyabet')) {
-                const hasHyper = selectedConditions.includes('Tansiyon');
-                // @ts-ignore
-                router.push({ pathname: '/(data-entry)/diabetes', params: { next: hasHyper ? 'bloodPressure' : 'tabs' } });
-              } else if (selectedConditions.includes('Tansiyon')) {
-                // @ts-ignore
-                router.push({ pathname: '/(data-entry)/bloodPressure', params: { next: 'tabs' } });
-              } else {
-                // @ts-ignore
-                router.replace('/(tabs)');
+            loading={loading}
+            onPress={async () => {
+              try {
+                setLoading(true);
+                if (userToken) {
+                  await axios.put(`${API_URL}/auth/complete-onboarding`, {}, {
+                    headers: { Authorization: `Bearer ${userToken}` }
+                  });
+                }
+                await completeOnboarding();
+
+                if (selectedConditions.includes('Diyabet')) {
+                  const hasHyper = selectedConditions.includes('Tansiyon');
+                  // @ts-ignore
+                  router.push({ pathname: '/(data-entry)/diabetes', params: { next: hasHyper ? 'bloodPressure' : 'tabs' } });
+                } else if (selectedConditions.includes('Tansiyon')) {
+                  // @ts-ignore
+                  router.push({ pathname: '/(data-entry)/bloodPressure', params: { next: 'tabs' } });
+                } else {
+                  // @ts-ignore
+                  router.replace('/(tabs)');
+                }
+              } catch (e) {
+                console.error("Onboarding update failed", e);
+              } finally {
+                setLoading(false);
               }
             }}
             style={{ marginBottom: 12 }}

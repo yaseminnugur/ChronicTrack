@@ -4,14 +4,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProfileTab() {
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+
+      router.replace('/(auth)/login');
+    } catch (e) {
+      console.error('Logout failed', e);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         {/* Profile Header */}
         <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
+          </TouchableOpacity>
+
           <View style={styles.avatarWrapper}>
             {/* Fallback avatar icon if no image */}
             <View style={styles.avatarFallback}>
@@ -27,7 +44,7 @@ export default function ProfileTab() {
         {/* Info Section */}
         <View style={styles.sectionContainer}>
           <ThemedText style={styles.sectionTitle}>Sağlık Özeti</ThemedText>
-          
+
           {/* Card: Kilo */}
           <View style={styles.summaryCard}>
             <View style={styles.cardHeaderRow}>
@@ -121,6 +138,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     marginBottom: 40,
+    position: 'relative',
+  },
+  logoutBtn: {
+    position: 'absolute',
+    top: -10,
+    right: 0,
+    padding: 8,
   },
   avatarWrapper: {
     position: 'relative',

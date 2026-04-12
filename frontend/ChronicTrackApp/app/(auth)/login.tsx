@@ -10,10 +10,10 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '@/validations/auth';
+import { useAuth } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +27,7 @@ export default function LoginScreen() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,11 +46,15 @@ export default function LoginScreen() {
       });
 
       if (response.status === 200) {
-        const { token } = response.data;
-        // Save token
-        await AsyncStorage.setItem('userToken', token);
-        // Navigate to onboarding or tabs
-        router.replace('/(onboarding)/step1');
+        const { token, user } = response.data;
+        // Save token and onboarded status
+        await signIn(token, user.isOnboarded);
+        // Navigate based on status
+        if (user.isOnboarded) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/(onboarding)/step1');
+        }
       }
     } catch (error: any) {
       console.log('Login Error: ', error.message);
