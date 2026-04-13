@@ -128,6 +128,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#475569',
     letterSpacing: 1,
+    lineHeight: 16,
     width: '40%',
   },
   aiBadge: {
@@ -140,6 +141,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#1E3A8A',
+    lineHeight: 14,
   },
   riskLevelRow: {
     flexDirection: 'row',
@@ -182,6 +184,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 2,
+    lineHeight: 20,
   },
   miniCardLabel: {
     fontSize: 11,
@@ -194,6 +197,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 16,
     marginLeft: 4,
+    lineHeight: 20,
   },
   recCard: {
     flexDirection: 'row',
@@ -223,6 +227,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 6,
+    lineHeight: 20,
   },
   recDesc: {
     fontSize: 12,
@@ -263,6 +268,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#7F1D1D',
     marginBottom: 6,
+    lineHeight: 20,
   },
   alertDesc: {
     fontSize: 12,
@@ -281,6 +287,7 @@ const styles = StyleSheet.create({
     color: '#BAE6FD',
     letterSpacing: 1,
     marginBottom: 8,
+    lineHeight: 14,
   },
   accuracyTitle: {
     fontSize: 28,
@@ -289,6 +296,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginBottom: 12,
     letterSpacing: -0.5,
+    lineHeight: 36,
   },
   accuracyDesc: {
     fontSize: 12,

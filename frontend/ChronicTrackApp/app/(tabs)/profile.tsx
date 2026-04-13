@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 30,
   },
   sectionContainer: {
     backgroundColor: '#F1F5F9',
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 38,
   },
   cardValueUnit: {
     fontSize: 14,
@@ -261,6 +263,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 22,
   },
   fabContainer: {
     position: 'absolute',

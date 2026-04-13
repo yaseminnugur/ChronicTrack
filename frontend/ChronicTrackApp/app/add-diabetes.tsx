@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -16,6 +16,7 @@ export default function AddDiabetesScreen() {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [iosPickerStep, setIosPickerStep] = useState<'date' | 'time'>('date');
   
   const [mealState, setMealState] = useState(MEAL_OPTIONS[0]);
   const [showMealModal, setShowMealModal] = useState(false);
@@ -40,7 +41,18 @@ export default function AddDiabetesScreen() {
   };
 
   const openPicker = () => {
+    setIosPickerStep('date');
     setShowDatePicker(true);
+  };
+
+  const handleIosDone = () => {
+    if (iosPickerStep === 'date') {
+      setIosPickerStep('time');
+    } else {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+      setIosPickerStep('date');
+    }
   };
 
   return (
@@ -53,6 +65,7 @@ export default function AddDiabetesScreen() {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
@@ -119,32 +132,64 @@ export default function AddDiabetesScreen() {
               textAlignVertical="top"
             />
           </View>
-
-          <CustomButton
-            title="Ölçümü Kaydet"
-            onPress={handleSave}
-            leftIcon={<Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />}
-          />
         </View>
 
       </ScrollView>
 
+      <View style={styles.fabContainer}>
+        <CustomButton
+          title="Ölçümü Kaydet"
+          onPress={handleSave}
+          leftIcon={<Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />}
+        />
+      </View>
+      </KeyboardAvoidingView>
+
       {/* Date Pickers */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={onChangeDate}
-        />
-      )}
-      {showTimePicker && (
-        <DateTimePicker
-          value={date}
-          mode="time"
-          display="default"
-          onChange={onChangeTime}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal visible={showDatePicker} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => { setShowDatePicker(false); setIosPickerStep('date'); }}>
+            <Pressable style={[styles.modalContent, { paddingBottom: 40, alignItems: 'center' }]} onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalHeader, { width: '100%', flexDirection: 'row', justifyContent: 'space-between' }]}>
+                <ThemedText style={styles.modalTitle}>{iosPickerStep === 'date' ? 'Tarih Seçin' : 'Saat Seçin'}</ThemedText>
+                <TouchableOpacity onPress={handleIosDone}>
+                  <ThemedText style={{ color: '#2563EB', fontWeight: 'bold' }}>{iosPickerStep === 'date' ? 'İleri' : 'Bitti'}</ThemedText>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={date}
+                mode={iosPickerStep}
+                display="spinner"
+                maximumDate={new Date()}
+                onChange={(e, d) => {
+                  if (d) setDate(d);
+                }}
+                textColor="#0F172A"
+                style={{ width: 320, height: 200 }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : (
+        <>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={onChangeDate}
+            />
+          )}
+          {showTimePicker && (
+            <DateTimePicker
+              value={date}
+              mode="time"
+              display="default"
+              onChange={onChangeTime}
+            />
+          )}
+        </>
       )}
 
       {/* Meal State Modal */}
@@ -202,7 +247,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
     flexGrow: 1,
   },
   header: {
@@ -227,6 +272,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 8,
+    lineHeight: 36,
   },
   subtitle: {
     fontSize: 14,
@@ -371,5 +417,10 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     color: '#2563EB',
     fontWeight: '700',
+  },
+  fabContainer: {
+    padding: 24,
+    paddingTop: 12,
+    backgroundColor: 'rgba(248, 250, 252, 0.95)',
   }
 });

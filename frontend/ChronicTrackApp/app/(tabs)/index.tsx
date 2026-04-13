@@ -290,6 +290,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 34,
   },
   cardUnit: {
     fontSize: 11,

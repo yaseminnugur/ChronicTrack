@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Platform, Dimensions, Alert } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, Dimensions, Alert, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -67,6 +67,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
         <View style={styles.header}>
           {/* Logo Placeholder */}
@@ -131,6 +132,7 @@ export default function LoginScreen() {
         </ThemedView>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

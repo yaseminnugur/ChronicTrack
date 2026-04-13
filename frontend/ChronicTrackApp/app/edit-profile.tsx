@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Switch, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -31,6 +31,7 @@ export default function EditProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Profile Info Subheader */}
@@ -154,6 +155,7 @@ export default function EditProfileScreen() {
           <ThemedText style={styles.saveButtonText}>Değişiklikleri Kaydet</ThemedText>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 4,
+    lineHeight: 28,
   },
   subTitle: {
     fontSize: 12,
@@ -368,11 +371,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   fabContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 24,
+    paddingTop: 12,
     backgroundColor: 'rgba(248, 250, 252, 0.95)',
   },
   saveButton: {

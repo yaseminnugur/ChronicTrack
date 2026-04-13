@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal } from 'react-native';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -16,6 +16,7 @@ export default function AddBloodPressureScreen() {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [iosPickerStep, setIosPickerStep] = useState<'date' | 'time'>('date');
 
   const handleSave = () => {
     router.back();
@@ -37,7 +38,18 @@ export default function AddBloodPressureScreen() {
   };
 
   const openPicker = () => {
+    setIosPickerStep('date');
     setShowDatePicker(true);
+  };
+
+  const handleIosDone = () => {
+    if (iosPickerStep === 'date') {
+      setIosPickerStep('time');
+    } else {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+      setIosPickerStep('date');
+    }
   };
 
   return (
@@ -50,6 +62,7 @@ export default function AddBloodPressureScreen() {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.pillBadge}>
@@ -130,31 +143,63 @@ export default function AddBloodPressureScreen() {
               İpucu: En doğru ölçüm için tansiyonunuzu ölçmeden önce 5 dakika sakince oturun. Ayaklarınızı yere düz basın.
             </ThemedText>
           </View>
-
-          <CustomButton
-            title="Ölçümü Kaydet"
-            onPress={handleSave}
-            leftIcon={<FontAwesome5 name="save" size={16} color="#FFF" style={{ marginRight: 8 }} />}
-          />
         </View>
       </ScrollView>
 
+      <View style={styles.fabContainer}>
+        <CustomButton
+          title="Ölçümü Kaydet"
+          onPress={handleSave}
+          leftIcon={<FontAwesome5 name="save" size={16} color="#FFF" style={{ marginRight: 8 }} />}
+        />
+      </View>
+      </KeyboardAvoidingView>
+
       {/* Date / Time Pickers */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={onChangeDate}
-        />
-      )}
-      {showTimePicker && (
-        <DateTimePicker
-          value={date}
-          mode="time"
-          display="default"
-          onChange={onChangeTime}
-        />
+      {Platform.OS === 'ios' ? (
+        <Modal visible={showDatePicker} transparent animationType="fade">
+          <Pressable style={styles.modalOverlay} onPress={() => { setShowDatePicker(false); setIosPickerStep('date'); }}>
+            <Pressable style={[styles.modalContent, { paddingBottom: 40, alignItems: 'center' }]} onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.modalHeader, { width: '100%', flexDirection: 'row', justifyContent: 'space-between' }]}>
+                <ThemedText style={styles.modalTitle}>{iosPickerStep === 'date' ? 'Tarih Seçin' : 'Saat Seçin'}</ThemedText>
+                <TouchableOpacity onPress={handleIosDone}>
+                  <ThemedText style={{ color: '#E11D48', fontWeight: 'bold' }}>{iosPickerStep === 'date' ? 'İleri' : 'Bitti'}</ThemedText>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={date}
+                mode={iosPickerStep}
+                display="spinner"
+                maximumDate={new Date()}
+                onChange={(e, d) => {
+                  if (d) setDate(d);
+                }}
+                textColor="#0F172A"
+                style={{ width: 320, height: 200 }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : (
+        <>
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              onChange={onChangeDate}
+            />
+          )}
+          {showTimePicker && (
+            <DateTimePicker
+              value={date}
+              mode="time"
+              display="default"
+              onChange={onChangeTime}
+            />
+          )}
+        </>
       )}
 
     </SafeAreaView>
@@ -183,7 +228,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
     flexGrow: 1,
   },
   header: {
@@ -208,6 +253,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 8,
+    lineHeight: 36,
   },
   subtitle: {
     fontSize: 14,
@@ -295,5 +341,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#475569',
     lineHeight: 18,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+  },
+  modalHeader: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  fabContainer: {
+    padding: 24,
+    paddingTop: 12,
+    backgroundColor: 'rgba(248, 250, 252, 0.95)',
   }
 });

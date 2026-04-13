@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#0F172A',
+    lineHeight: 36,
   },
   addButton: {
     width: 48,
@@ -227,6 +228,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFF',
     letterSpacing: -1,
+    lineHeight: 38,
   },
   summaryUnit: {
     fontSize: 14,
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 11,
     fontWeight: '600',
-    lineHeight: 14,
+    lineHeight: 16,
   },
   trendInfo: {
     flexDirection: 'row',
@@ -259,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFF',
     fontWeight: '500',
-    lineHeight: 14,
+    lineHeight: 16,
   },
   groupContainer: {
     marginBottom: 24,
@@ -324,6 +326,7 @@ const styles = StyleSheet.create({
   itemValue: {
     fontSize: 20,
     fontWeight: '800',
+    lineHeight: 28,
   },
   itemUnit: {
     fontSize: 9,
