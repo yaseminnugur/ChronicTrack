@@ -18,3 +18,12 @@ export const completeOnboardingWithConditions = async (chronicConditions: string
   });
   return response.data;
 };
+
+export const saveOnboardingData = async (data: {
+  diabetesType?: string;
+  hba1c?: string;
+  bloodPressureData?: any;
+}) => {
+  const response = await api.post('/onboarding/data', data);
+  return response.data;
+};

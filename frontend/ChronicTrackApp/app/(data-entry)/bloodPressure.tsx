@@ -7,7 +7,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
-import { saveBloodPressure } from '../../services/healthService';
+import { saveOnboardingData } from '../../services/onboardingService';
 
 export default function BloodPressureEntryScreen() {
   const colorScheme = useColorScheme();
@@ -25,11 +25,13 @@ export default function BloodPressureEntryScreen() {
     try {
       setSaving(true);
       const validSets = sets.filter(s => s.sis && s.dia);
-      for (const set of validSets) {
-        await saveBloodPressure({
-          systolic: set.sis,
-          diastolic: set.dia,
-          pulse: set.pulse || '0',
+      if (validSets.length > 0) {
+        await saveOnboardingData({
+          bloodPressureData: validSets.map(set => ({
+            sis: set.sis,
+            dia: set.dia,
+            pulse: set.pulse || '0',
+          })),
         });
       }
       router.replace('/(tabs)');

@@ -6,6 +6,7 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
 import { getBloodPressures } from '../../services/healthService';
+import { getUserProfile } from '../../services/userService';
 
 export default function BloodPressureListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
@@ -16,8 +17,28 @@ export default function BloodPressureListScreen() {
     React.useCallback(() => {
       const fetchRecords = async () => {
         try {
-          const data = await getBloodPressures();
-          setRecords(data || []);
+          const [data, profile] = await Promise.all([
+            getBloodPressures(),
+            getUserProfile()
+          ]);
+
+          let allRecords = data || [];
+
+          if (profile?.user?.onboardingData?.bloodPressureData) {
+            const onboardingRecords = profile.user.onboardingData.bloodPressureData.map((bp: any, idx: number) => ({
+              id: `onboarding-${idx}`,
+              systolic: bp.sis,
+              diastolic: bp.dia,
+              pulse: bp.pulse,
+              measuredAt: profile.user.onboardingData.createdAt || profile.user.createdAt,
+              notes: `İlk Kayıt (Set ${idx + 1})`
+            }));
+            allRecords = [...allRecords, ...onboardingRecords];
+          }
+
+          allRecords.sort((a: any, b: any) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime());
+
+          setRecords(allRecords);
         } catch (e) {
           console.error(e);
         } finally {
@@ -33,7 +54,7 @@ export default function BloodPressureListScreen() {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     let todaySysSum = 0;
     let todayDiaSum = 0;
     let todayCount = 0;
@@ -41,26 +62,29 @@ export default function BloodPressureListScreen() {
     records.forEach((item) => {
       const d = new Date(item.measuredAt);
       const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
-      
+
+      const sys = Number(item.systolic);
+      const dia = Number(item.diastolic);
+
       let dateGroup = dateStr;
       if (d.toDateString() === today.toDateString()) {
-         dateGroup = 'Bugün, ' + dateStr;
-         todaySysSum += item.systolic;
-         todayDiaSum += item.diastolic;
-         todayCount++;
+        dateGroup = 'Bugün, ' + dateStr;
+        todaySysSum += sys;
+        todayDiaSum += dia;
+        todayCount++;
       }
       else if (d.toDateString() === yesterday.toDateString()) {
-         dateGroup = 'Dün, ' + dateStr;
+        dateGroup = 'Dün, ' + dateStr;
       }
-      
+
       if (!groups[dateGroup]) groups[dateGroup] = [];
-      
+
       const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       let type = 'normal';
       let detail = 'Normal';
-      if (item.systolic >= 140 || item.diastolic >= 90) { type = 'danger'; detail = 'Yüksek'; }
-      else if (item.systolic > 120 || item.diastolic > 80) { type = 'high'; detail = 'Hafif Yüksek'; }
-      
+      if (sys >= 140 || dia >= 90) { type = 'danger'; detail = 'Yüksek'; }
+      else if (sys > 120 || dia > 80) { type = 'high'; detail = 'Hafif Yüksek'; }
+
       groups[dateGroup].push({
         id: item.id,
         title: item.notes || 'Ölçüm',
@@ -74,7 +98,7 @@ export default function BloodPressureListScreen() {
 
     const avgSys = todayCount > 0 ? Math.round(todaySysSum / todayCount) : null;
     const avgDia = todayCount > 0 ? Math.round(todayDiaSum / todayCount) : null;
-    
+
     const formattedGroups = Object.keys(groups).map((key, index) => ({
       id: index.toString(),
       dateGroup: key,
@@ -130,7 +154,6 @@ export default function BloodPressureListScreen() {
 
         {activeTab === 'Liste' ? (
           <View>
-            {/* Big Summary Card */}
             <View style={[styles.summaryCard, { backgroundColor: '#E11D48', shadowColor: '#E11D48' }]}>
               <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
               <View style={styles.summaryValueRow}>
@@ -145,7 +168,6 @@ export default function BloodPressureListScreen() {
               </View>
             </View>
 
-            {/* List Section */}
             {formattedGroups.length > 0 ? (
               formattedGroups.map((group) => (
                 <View key={group.id} style={styles.groupContainer}>
@@ -179,20 +201,18 @@ export default function BloodPressureListScreen() {
                   })}
                 </View>
               ))
-        ) : (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <Ionicons name="pulse" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
-            <ThemedText style={{ fontSize: 16, fontWeight: '700', color: '#64748B' }}>Henüz kayıt bulunamadı.</ThemedText>
-            <ThemedText style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
-          </View>
-        )}
+            ) : (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Ionicons name="pulse" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
+                <ThemedText style={{ fontSize: 16, fontWeight: '700', color: '#64748B' }}>Henüz kayıt bulunamadı.</ThemedText>
+                <ThemedText style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
+              </View>
+            )}
           </View>
         ) : (
           <AnalysisView />
         )}
-
       </ScrollView>
-
     </SafeAreaView>
   );
 }

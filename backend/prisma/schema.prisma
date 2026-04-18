@@ -30,6 +30,7 @@ model User {
   bloodPressures BloodPressure[]
   bloodSugars    BloodSugar[]
   healthAnalyses HealthAnalysis[]
+  onboardingData OnboardingData?
 }
 
 model BloodPressure {
@@ -67,4 +68,15 @@ model HealthAnalysis {
   aiSummary      String   @db.Text
   recommendation String   @db.Text
   createdAt      DateTime @default(now())
+}
+
+model OnboardingData {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  diabetesType      String?
+  hba1c             Float?
+  bloodPressureData Json?    // Array of objects like [{ sis, dia, pulse }, ...]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

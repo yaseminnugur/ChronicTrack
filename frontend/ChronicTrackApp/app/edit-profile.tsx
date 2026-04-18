@@ -14,6 +14,7 @@ export default function EditProfileScreen() {
   const [isSmoking, setIsSmoking] = useState(false);
   const [activityLevel, setActivityLevel] = useState('Orta');
   const [saltLevel, setSaltLevel] = useState('Orta Düzey');
+  const [onboardingData, setOnboardingData] = useState<any>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,6 +33,9 @@ export default function EditProfileScreen() {
           setIsSmoking(!!data.user.isSmoking);
           setActivityLevel(data.user.activityLevel || 'Orta');
           setSaltLevel(data.user.saltLevel || 'Orta Düzey');
+          if (data.user.onboardingData) {
+            setOnboardingData(data.user.onboardingData);
+          }
         }
       } catch (error) {
         console.error('Profil yüklenirken hata:', error);
@@ -190,6 +194,58 @@ export default function EditProfileScreen() {
             </View>
 
           </View>
+
+          {/* Section: ONBOARDING DATA */}
+          {onboardingData && (
+            <View style={styles.formSection}>
+              <View style={{flexDirection:'row', justifyContent:'space-between', alignItems: 'center', marginBottom: 20}}>
+                <ThemedText style={[styles.sectionLabel, {marginBottom: 0}]}>İLK KAYIT ÖLÇÜMLERİ (ONBOARDING)</ThemedText>
+                <FontAwesome5 name="lock" size={12} color="#94A3B8" />
+              </View>
+              
+              {onboardingData.diabetesType && (
+                <View style={[styles.inputGroup, { marginBottom: 16 }]}>
+                  <ThemedText style={styles.inputLabel}>Diyabet Tipi</ThemedText>
+                  <View style={[styles.inputWrapper, {backgroundColor: '#E2E8F0', opacity: 0.8}]}>
+                     <ThemedText style={styles.input}>{onboardingData.diabetesType}</ThemedText>
+                     <FontAwesome5 name="tint" size={18} color="#475569" />
+                  </View>
+                </View>
+              )}
+
+              {onboardingData.hba1c && (
+                <View style={[styles.inputGroup, { marginBottom: 16 }]}>
+                  <ThemedText style={styles.inputLabel}>3 Aylık Şeker (HbA1c)</ThemedText>
+                  <View style={[styles.inputWrapper, {backgroundColor: '#E2E8F0', opacity: 0.8}]}>
+                     <ThemedText style={styles.input}>{onboardingData.hba1c} mg/dL</ThemedText>
+                     <FontAwesome5 name="chart-line" size={18} color="#475569" />
+                  </View>
+                </View>
+              )}
+
+              {onboardingData.bloodPressureData && Array.isArray(onboardingData.bloodPressureData) && onboardingData.bloodPressureData.length > 0 && (
+                <View style={styles.inputGroup}>
+                  <ThemedText style={styles.inputLabel}>Tansiyon Ölçümleri (Sistolik/Diyastolik)</ThemedText>
+                  <View style={{ backgroundColor: '#E2E8F0', borderRadius: 16, padding: 16, opacity: 0.8 }}>
+                    {onboardingData.bloodPressureData.map((bp: any, idx: number) => (
+                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: idx !== onboardingData.bloodPressureData.length - 1 ? 12 : 0 }}>
+                         <View style={{width: 24, height: 24, borderRadius: 12, backgroundColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginRight: 12}}>
+                           <ThemedText style={{fontSize: 10, fontWeight: '700', color: '#475569'}}>{idx + 1}</ThemedText>
+                         </View>
+                         <ThemedText style={{ fontSize: 15, fontWeight: '700', color: '#1E293B', flex: 1 }}>
+                           {bp.sis} / {bp.dia} <ThemedText style={{fontSize: 12, fontWeight: '500', color: '#64748B'}}>mmHg</ThemedText>
+                         </ThemedText>
+                         <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                           <FontAwesome5 name="heartbeat" size={12} color="#EF4444" style={{marginRight: 6}} />
+                           <ThemedText style={{ fontSize: 13, fontWeight: '600', color: '#475569' }}>{bp.pulse} bpm</ThemedText>
+                         </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
 
           <View style={styles.saveInfoBox}>
             <ThemedText style={styles.saveInfoText}>

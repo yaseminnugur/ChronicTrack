@@ -7,7 +7,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router, useLocalSearchParams } from 'expo-router';
-import { saveBloodSugar } from '../../services/healthService';
+import { saveOnboardingData } from '../../services/onboardingService';
 
 export default function DiabetesEntryScreen() {
   const colorScheme = useColorScheme();
@@ -22,12 +22,11 @@ export default function DiabetesEntryScreen() {
 
   const handleSave = async () => {
     try {
-      if (sugarLevel) {
+      if (sugarLevel || diabetesType) {
         setSaving(true);
-        await saveBloodSugar({
-          glucose: sugarLevel,
-          mealState: 'Belirtilmedi',
-          notes: diabetesType,
+        await saveOnboardingData({
+          diabetesType: diabetesType || undefined,
+          hba1c: sugarLevel || undefined,
         });
       }
       if (next === 'bloodPressure') {

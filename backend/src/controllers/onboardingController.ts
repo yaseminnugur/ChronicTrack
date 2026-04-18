@@ -85,3 +85,39 @@ export const saveConditionsAndComplete = async (req: Request, res: Response): Pr
     res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });
   }
 };
+
+export const saveOnboardingData = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Yetkilendirme hatası.' });
+      return;
+    }
+
+    const { diabetesType, hba1c, bloodPressureData } = req.body;
+
+    const onboardingData = await prisma.onboardingData.upsert({
+      where: { userId },
+      update: {
+        ...(diabetesType !== undefined && { diabetesType }),
+        ...(hba1c !== undefined && { hba1c: hba1c ? Number(hba1c) : null }),
+        ...(bloodPressureData !== undefined && { bloodPressureData }),
+      },
+      create: {
+        userId,
+        diabetesType: diabetesType || null,
+        hba1c: hba1c ? Number(hba1c) : null,
+        bloodPressureData: bloodPressureData || null,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Onboarding verisi kaydedildi.',
+      onboardingData,
+    });
+  } catch (error) {
+    console.error('Onboarding veri kaydetme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });
+  }
+};

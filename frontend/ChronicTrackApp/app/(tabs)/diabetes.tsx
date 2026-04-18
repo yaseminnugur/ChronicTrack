@@ -6,18 +6,26 @@ import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-ico
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
 import { getBloodSugars } from '../../services/healthService';
+import { getUserProfile } from '../../services/userService';
 
 export default function DiabetesListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
   const [records, setRecords] = useState<any[]>([]);
+  const [onboardingData, setOnboardingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchRecords = async () => {
         try {
-          const data = await getBloodSugars();
+          const [data, profile] = await Promise.all([
+            getBloodSugars(),
+            getUserProfile()
+          ]);
           setRecords(data || []);
+          if (profile?.user?.onboardingData) {
+            setOnboardingData(profile.user.onboardingData);
+          }
         } catch (e) {
           console.error(e);
         } finally {
@@ -41,10 +49,12 @@ export default function DiabetesListScreen() {
       const d = new Date(item.measuredAt);
       const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
       
+      const glucoseVal = Number(item.glucose);
+
       let dateGroup = dateStr;
       if (d.toDateString() === today.toDateString()) {
          dateGroup = 'Bugün, ' + dateStr;
-         todaySum += item.glucose;
+         todaySum += glucoseVal;
          todayCount++;
       }
       else if (d.toDateString() === yesterday.toDateString()) {
@@ -148,6 +158,27 @@ export default function DiabetesListScreen() {
                 </View>
               </View>
             </View>
+
+            {/* HbA1c Card from Onboarding */}
+            {onboardingData && onboardingData.hba1c && (
+              <View style={[styles.summaryCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, shadowColor: '#000', elevation: 2, padding: 16, marginBottom: 24, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 } }]}>
+                 <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+                    <ThemedText style={{fontSize: 13, fontWeight: '700', color: '#64748B'}}>3 Aylık Şeker (HbA1c)</ThemedText>
+                    <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                      <ThemedText style={{ fontSize: 10, color: '#1D4ED8', fontWeight: '700' }}>İlk Kayıt Verisi</ThemedText>
+                    </View>
+                 </View>
+                 <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+                    <ThemedText style={{fontSize: 32, fontWeight: '800', color: '#0F172A'}}>{onboardingData.hba1c}</ThemedText>
+                    <ThemedText style={{fontSize: 14, fontWeight: '600', color: '#64748B', marginLeft: 6}}>mg/dL</ThemedText>
+                 </View>
+                 {onboardingData.diabetesType && (
+                   <ThemedText style={{ fontSize: 12, color: '#475569', marginTop: 8 }}>
+                     Diyabet Tipi: <ThemedText style={{fontWeight: '700'}}>{onboardingData.diabetesType}</ThemedText>
+                   </ThemedText>
+                 )}
+              </View>
+            )}
 
             {/* List Section */}
             {formattedGroups.length > 0 ? (
