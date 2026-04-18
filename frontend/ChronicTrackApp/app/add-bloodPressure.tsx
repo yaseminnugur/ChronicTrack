@@ -6,6 +6,7 @@ import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { saveBloodPressure } from '../services/healthService';
 
 export default function AddBloodPressureScreen() {
   const [sis, setSis] = useState('');
@@ -17,9 +18,25 @@ export default function AddBloodPressureScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [iosPickerStep, setIosPickerStep] = useState<'date' | 'time'>('date');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    router.back();
+  const handleSave = async () => {
+    try {
+      if (sis && dia) {
+        setSaving(true);
+        await saveBloodPressure({
+          systolic: sis,
+          diastolic: dia,
+          pulse: pulse || '0',
+          notes,
+        });
+      }
+      router.back();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onChangeDate = (event: any, selectedDate?: Date) => {
@@ -150,6 +167,7 @@ export default function AddBloodPressureScreen() {
         <CustomButton
           title="Ölçümü Kaydet"
           onPress={handleSave}
+          loading={saving}
           leftIcon={<FontAwesome5 name="save" size={16} color="#FFF" style={{ marginRight: 8 }} />}
         />
       </View>

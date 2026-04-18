@@ -9,15 +9,12 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
-import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, RegisterFormData } from '@/validations/auth';
+import { api } from '../../services/api';
 
 const { width } = Dimensions.get('window');
-
-// Backend URL from environment variables
-const API_URL = process.env.EXPO_PUBLIC_API_URL as string;
 
 export default function RegisterScreen() {
   const colorScheme = useColorScheme();
@@ -40,7 +37,7 @@ export default function RegisterScreen() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setLoading(true);
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      const response = await api.post('/auth/register', {
         name: data.name,
         email: data.email,
         password: data.password,

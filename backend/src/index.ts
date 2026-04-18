@@ -20,9 +20,13 @@ app.get('/', (req, res) => {
 
 // API Routes
 import authRoutes from './routes/authRoutes.ts';
+import onboardingRoutes from './routes/onboardingRoutes.ts';
+import healthRoutes from './routes/healthRoutes.ts';
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/health', healthRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;

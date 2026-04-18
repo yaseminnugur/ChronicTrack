@@ -1,29 +1,81 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Switch, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Switch, Platform, KeyboardAvoidingView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 
 export default function EditProfileScreen() {
-  const [weight, setWeight] = useState('72');
-  const [height, setHeight] = useState('175');
-  const [age, setAge] = useState('68');
-  
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [age, setAge] = useState('');
+
   const [isSmoking, setIsSmoking] = useState(false);
   const [activityLevel, setActivityLevel] = useState('Orta');
   const [saltLevel, setSaltLevel] = useState('Orta Düzey');
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   const ACTIVITY_OPTIONS = ['Hareketsiz', 'Orta', 'Aktif', 'Sporcu'];
   const SALT_OPTIONS = ['Düşük', 'Orta Düzey', 'Yüksek'];
 
-  const handleSave = () => {
-    router.back();
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getUserProfile();
+        if (data.user) {
+          setWeight(data.user.weight ? data.user.weight.toString() : '');
+          setHeight(data.user.height ? data.user.height.toString() : '');
+          setAge(data.user.age ? data.user.age.toString() : '');
+          setIsSmoking(!!data.user.isSmoking);
+          setActivityLevel(data.user.activityLevel || 'Orta');
+          setSaltLevel(data.user.saltLevel || 'Orta Düzey');
+        }
+      } catch (error) {
+        console.error('Profil yüklenirken hata:', error);
+        Alert.alert('Hata', 'Profil bilgileri yüklenemedi.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await updateUserProfile({
+        weight,
+        height,
+        age,
+        isSmoking,
+        activityLevel,
+        saltLevel,
+      });
+      Alert.alert('Başarılı', 'Profil başarıyla güncellendi.', [
+        { text: 'Tamam', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      console.error('Profil güncellenirken hata:', error);
+      Alert.alert('Hata', 'Profil güncellenemedi.');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0EA5E9" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      
+
       {/* Header View */}
       <View style={styles.topNav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -32,129 +84,131 @@ export default function EditProfileScreen() {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Profile Info Subheader */}
-        <View style={styles.headerTitleRow}>
-          <View style={styles.avatarWrapper}>
-            <View style={styles.avatarFallback}>
-              <Ionicons name="person" size={32} color="#94A3B8" />
-            </View>
-            <View style={styles.cameraBtn}>
-              <Ionicons name="camera" size={10} color="#FFF" />
-            </View>
-          </View>
-          <View style={styles.headerTextCol}>
-            <ThemedText style={styles.mainTitle}>Kişisel Sağlık Profili</ThemedText>
-            <ThemedText style={styles.subTitle}>Hassas sağlık takibi için bilgilerinizi güncelleyin.</ThemedText>
-          </View>
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Section: FİZİKSEL ÖZELLİKLER */}
-        <View style={styles.formSection}>
-          <ThemedText style={styles.sectionLabel}>FİZİKSEL ÖZELLİKLER</ThemedText>
-          
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.inputLabel}>Kilo (kg)</ThemedText>
-            <View style={styles.inputWrapper}>
-              <TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="numeric" />
-              <MaterialCommunityIcons name="weight" size={20} color="#475569" />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.inputLabel}>Boy (cm)</ThemedText>
-            <View style={styles.inputWrapper}>
-              <TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="numeric" />
-              <MaterialCommunityIcons name="ruler" size={20} color="#475569" />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.inputLabel}>Yaş</ThemedText>
-            <View style={styles.inputWrapper}>
-              <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
-              <Ionicons name="calendar-outline" size={20} color="#475569" />
-            </View>
-          </View>
-        </View>
-
-        {/* Section: YAŞAM TARZI VE ALIŞKANLIKLAR */}
-        <View style={styles.formSection}>
-          <ThemedText style={styles.sectionLabel}>YAŞAM TARZI VE ALIŞKANLIKLAR</ThemedText>
-          
-          {/* Smoking Toggle */}
-          <View style={styles.toggleCard}>
-            <View style={styles.toggleIconCol}>
-              <View style={styles.smokeIconWrap}>
-                <FontAwesome5 name="smoking-ban" size={16} color="#0284C7" />
+          {/* Profile Info Subheader */}
+          <View style={styles.headerTitleRow}>
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatarFallback}>
+                <Ionicons name="person" size={32} color="#94A3B8" />
+              </View>
+              <View style={styles.cameraBtn}>
+                <Ionicons name="camera" size={10} color="#FFF" />
               </View>
             </View>
-            <View style={styles.toggleTextCol}>
-              <ThemedText style={styles.toggleTitle}>Sigara Kullanımı</ThemedText>
-              <ThemedText style={styles.toggleDesc}>Şu anda sigara içiyor musunuz?</ThemedText>
-            </View>
-            <Switch 
-              value={isSmoking} 
-              onValueChange={setIsSmoking} 
-              trackColor={{ false: '#E2E8F0', true: '#0EA5E9' }}
-              thumbColor={'#FFF'}
-            />
-          </View>
-
-          {/* Activity Buttons */}
-          <ThemedText style={styles.inputLabel}>Günlük Aktivite Düzeyi</ThemedText>
-          <View style={styles.pillGrid}>
-            {ACTIVITY_OPTIONS.map((opt) => (
-              <TouchableOpacity 
-                key={opt}
-                activeOpacity={0.7}
-                onPress={() => setActivityLevel(opt)}
-                style={[styles.pillBtn, activityLevel === opt && styles.pillBtnActive]}
-              >
-                <ThemedText style={[styles.pillText, activityLevel === opt && styles.pillTextActive]}>{opt}</ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Salt Selector using Buttons instead of Slider */}
-          <View style={styles.saltHeaderRow}>
-            <ThemedText style={styles.inputLabel}>Tuz Tüketimi</ThemedText>
-            <View style={styles.saltStatusBadge}>
-              <ThemedText style={styles.saltStatusText}>{saltLevel}</ThemedText>
+            <View style={styles.headerTextCol}>
+              <ThemedText style={styles.mainTitle}>Kişisel Sağlık Profili</ThemedText>
+              <ThemedText style={styles.subTitle}>Hassas sağlık takibi için bilgilerinizi güncelleyin.</ThemedText>
             </View>
           </View>
-          <View style={styles.pillGrid}>
-            {SALT_OPTIONS.map((opt) => (
-              <TouchableOpacity 
-                key={opt}
-                activeOpacity={0.7}
-                onPress={() => setSaltLevel(opt)}
-                style={[styles.pillBtn, saltLevel === opt && styles.pillBtnActive]}
-              >
-                <ThemedText style={[styles.pillText, saltLevel === opt && styles.pillTextActive]}>{opt}</ThemedText>
-              </TouchableOpacity>
-            ))}
+
+          {/* Section: FİZİKSEL ÖZELLİKLER */}
+          <View style={styles.formSection}>
+            <ThemedText style={styles.sectionLabel}>FİZİKSEL ÖZELLİKLER</ThemedText>
+
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.inputLabel}>Kilo (kg)</ThemedText>
+              <View style={styles.inputWrapper}>
+                <TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="numeric" />
+                <MaterialCommunityIcons name="weight" size={20} color="#475569" />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.inputLabel}>Boy (cm)</ThemedText>
+              <View style={styles.inputWrapper}>
+                <TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="numeric" />
+                <MaterialCommunityIcons name="ruler" size={20} color="#475569" />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <ThemedText style={styles.inputLabel}>Yaş</ThemedText>
+              <View style={styles.inputWrapper}>
+                <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+                <Ionicons name="calendar-outline" size={20} color="#475569" />
+              </View>
+            </View>
           </View>
 
-        </View>
-        
-        {/* Save Info */}
-        <View style={styles.saveInfoBox}>
-          <ThemedText style={styles.saveInfoText}>
-            Değişiklikler sağlık analizlerinize anında yansıtılacaktır.
-          </ThemedText>
-        </View>
+          {/* Section: YAŞAM TARZI VE ALIŞKANLIKLAR */}
+          <View style={styles.formSection}>
+            <ThemedText style={styles.sectionLabel}>YAŞAM TARZI VE ALIŞKANLIKLAR</ThemedText>
 
-      </ScrollView>
+            {/* Smoking Toggle */}
+            <View style={styles.toggleCard}>
+              <View style={styles.toggleIconCol}>
+                <View style={styles.smokeIconWrap}>
+                  <FontAwesome5 name="smoking-ban" size={16} color="#0284C7" />
+                </View>
+              </View>
+              <View style={styles.toggleTextCol}>
+                <ThemedText style={styles.toggleTitle}>Sigara Kullanımı</ThemedText>
+                <ThemedText style={styles.toggleDesc}>Şu anda sigara içiyor musunuz?</ThemedText>
+              </View>
+              <Switch
+                value={isSmoking}
+                onValueChange={setIsSmoking}
+                trackColor={{ false: '#E2E8F0', true: '#0EA5E9' }}
+                thumbColor={'#FFF'}
+              />
+            </View>
 
-      {/* Floating Action Button */}
-      <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.saveButton} activeOpacity={0.9} onPress={handleSave}>
-          <FontAwesome5 name="save" size={16} color="#FFF" style={{ marginRight: 8 }} />
-          <ThemedText style={styles.saveButtonText}>Değişiklikleri Kaydet</ThemedText>
-        </TouchableOpacity>
-      </View>
+            {/* Activity Buttons */}
+            <ThemedText style={styles.inputLabel}>Günlük Aktivite Düzeyi</ThemedText>
+            <View style={styles.pillGrid}>
+              {ACTIVITY_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt}
+                  activeOpacity={0.7}
+                  onPress={() => setActivityLevel(opt)}
+                  style={[styles.pillBtn, activityLevel === opt && styles.pillBtnActive]}
+                >
+                  <ThemedText style={[styles.pillText, activityLevel === opt && styles.pillTextActive]}>{opt}</ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Salt Selector using Buttons instead of Slider */}
+            <View style={styles.saltHeaderRow}>
+              <ThemedText style={styles.inputLabel}>Tuz Tüketimi</ThemedText>
+              <View style={styles.saltStatusBadge}>
+                <ThemedText style={styles.saltStatusText}>{saltLevel}</ThemedText>
+              </View>
+            </View>
+            <View style={styles.pillGrid}>
+              {SALT_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt}
+                  activeOpacity={0.7}
+                  onPress={() => setSaltLevel(opt)}
+                  style={[styles.pillBtn, saltLevel === opt && styles.pillBtnActive]}
+                >
+                  <ThemedText style={[styles.pillText, saltLevel === opt && styles.pillTextActive]}>{opt}</ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+          </View>
+
+          <View style={styles.saveInfoBox}>
+            <ThemedText style={styles.saveInfoText}>
+              Değişiklikler sağlık analizlerinize anında yansıtılacaktır.
+            </ThemedText>
+          </View>
+
+        </ScrollView>
+
+        <View style={styles.fabContainer}>
+          <TouchableOpacity style={styles.saveButton} activeOpacity={0.9} onPress={handleSave} disabled={saving}>
+            {saving ? (
+              <ActivityIndicator color="#FFF" style={{ marginRight: 8 }} />
+            ) : (
+              <FontAwesome5 name="save" size={16} color="#FFF" style={{ marginRight: 8 }} />
+            )}
+            <ThemedText style={styles.saveButtonText}>Değişiklikleri Kaydet</ThemedText>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

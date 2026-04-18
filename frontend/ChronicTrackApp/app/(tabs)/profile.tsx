@@ -1,23 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { getUserProfile } from '../../services/userService';
 
 export default function ProfileTab() {
   const { signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchProfile = async () => {
+        try {
+          const res = await getUserProfile();
+          setProfile(res.user);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProfile();
+    }, [])
+  );
 
   const handleLogout = async () => {
     try {
       await signOut();
-
       router.replace('/(auth)/login');
     } catch (e) {
       console.error('Logout failed', e);
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
+        <ThemedText>Yükleniyor...</ThemedText>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -38,7 +64,7 @@ export default function ProfileTab() {
               <FontAwesome5 name="pen" size={10} color="#FFF" />
             </TouchableOpacity>
           </View>
-          <ThemedText style={styles.userName}>Dr. Elena Sterling</ThemedText>
+          <ThemedText style={styles.userName}>{profile?.name || 'Kullanıcı'}</ThemedText>
         </View>
 
         {/* Info Section */}
@@ -52,7 +78,7 @@ export default function ProfileTab() {
               <ThemedText style={styles.cardLabelText}>KİLO</ThemedText>
             </View>
             <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>68.5</ThemedText>
+              <ThemedText style={styles.cardValueBig}>{profile?.weight || '--'}</ThemedText>
               <ThemedText style={styles.cardValueUnit}>kg</ThemedText>
             </View>
           </View>
@@ -64,7 +90,7 @@ export default function ProfileTab() {
               <ThemedText style={styles.cardLabelText}>BOY</ThemedText>
             </View>
             <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>172</ThemedText>
+              <ThemedText style={styles.cardValueBig}>{profile?.height || '--'}</ThemedText>
               <ThemedText style={styles.cardValueUnit}>cm</ThemedText>
             </View>
           </View>
@@ -76,7 +102,7 @@ export default function ProfileTab() {
               <ThemedText style={styles.cardLabelText}>YAŞ</ThemedText>
             </View>
             <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>42</ThemedText>
+              <ThemedText style={styles.cardValueBig}>{profile?.age || '--'}</ThemedText>
               <ThemedText style={styles.cardValueUnit}>yaş</ThemedText>
             </View>
           </View>
@@ -88,7 +114,7 @@ export default function ProfileTab() {
             </View>
             <View style={styles.rowCardTextCol}>
               <ThemedText style={styles.rowCardLabel}>SİGARA KULLANIMI</ThemedText>
-              <ThemedText style={styles.rowCardValue}>Kullanmıyor{'\n'}(Hiç Kullanmadı)</ThemedText>
+              <ThemedText style={styles.rowCardValue}>{profile?.isSmoking ? 'Kullanıyor' : 'Kullanmıyor'}</ThemedText>
             </View>
           </View>
 
@@ -99,7 +125,7 @@ export default function ProfileTab() {
             </View>
             <View style={styles.rowCardTextCol}>
               <ThemedText style={styles.rowCardLabel}>FİZİKSEL AKTİVİTE</ThemedText>
-              <ThemedText style={styles.rowCardValue}>Orta Derece Aktif</ThemedText>
+              <ThemedText style={styles.rowCardValue}>{profile?.activityLevel || 'Belirtilmedi'}</ThemedText>
             </View>
           </View>
 
@@ -110,7 +136,7 @@ export default function ProfileTab() {
             </View>
             <View style={styles.rowCardTextCol}>
               <ThemedText style={styles.rowCardLabel}>TUZ TÜKETİMİ</ThemedText>
-              <ThemedText style={styles.rowCardValue}>Düşük Tüketim</ThemedText>
+              <ThemedText style={styles.rowCardValue}>{profile?.saltLevel || 'Belirtilmedi'}</ThemedText>
             </View>
           </View>
 

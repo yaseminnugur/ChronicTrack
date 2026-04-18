@@ -3,30 +3,88 @@ import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
-
-const MOCK_DATA = [
-  {
-    id: '1',
-    dateGroup: 'Bugün, 24 Ekim',
-    items: [
-      { id: '1-1', title: 'Sabah Ölçümü', time: '08:45', value: '125/82', detail: 'Hafif Yüksek', type: 'high', icon: 'heart' },
-      { id: '1-2', title: 'Öğle Ölçümü', time: '14:20', value: '118/76', detail: 'Normal', type: 'normal', icon: 'heart' },
-    ]
-  },
-  {
-    id: '2',
-    dateGroup: 'Dün, 23 Ekim',
-    items: [
-      { id: '2-1', title: 'Akşam Ölçümü', time: '21:45', value: '115/72', detail: 'Normal', type: 'normal', icon: 'moon' },
-      { id: '2-2', title: 'Sabah Ölçümü', time: '08:00', value: '138/88', detail: 'Yüksek', type: 'danger', icon: 'heart' },
-    ]
-  }
-];
+import { getBloodPressures } from '../../services/healthService';
 
 export default function BloodPressureListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchRecords = async () => {
+        try {
+          const data = await getBloodPressures();
+          setRecords(data || []);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchRecords();
+    }, [])
+  );
+
+  const groupData = () => {
+    const groups: any = {};
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let todaySysSum = 0;
+    let todayDiaSum = 0;
+    let todayCount = 0;
+
+    records.forEach((item) => {
+      const d = new Date(item.measuredAt);
+      const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+      
+      let dateGroup = dateStr;
+      if (d.toDateString() === today.toDateString()) {
+         dateGroup = 'Bugün, ' + dateStr;
+         todaySysSum += item.systolic;
+         todayDiaSum += item.diastolic;
+         todayCount++;
+      }
+      else if (d.toDateString() === yesterday.toDateString()) {
+         dateGroup = 'Dün, ' + dateStr;
+      }
+      
+      if (!groups[dateGroup]) groups[dateGroup] = [];
+      
+      const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      let type = 'normal';
+      let detail = 'Normal';
+      if (item.systolic >= 140 || item.diastolic >= 90) { type = 'danger'; detail = 'Yüksek'; }
+      else if (item.systolic > 120 || item.diastolic > 80) { type = 'high'; detail = 'Hafif Yüksek'; }
+      
+      groups[dateGroup].push({
+        id: item.id,
+        title: item.notes || 'Ölçüm',
+        time: timeStr,
+        value: `${item.systolic}/${item.diastolic}`,
+        detail: detail,
+        type: type,
+        icon: 'heart'
+      });
+    });
+
+    const avgSys = todayCount > 0 ? Math.round(todaySysSum / todayCount) : null;
+    const avgDia = todayCount > 0 ? Math.round(todayDiaSum / todayCount) : null;
+    
+    const formattedGroups = Object.keys(groups).map((key, index) => ({
+      id: index.toString(),
+      dateGroup: key,
+      items: groups[key]
+    }));
+
+    return { formattedGroups, avgSys, avgDia };
+  };
+
+  const { formattedGroups, avgSys, avgDia } = groupData();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -72,58 +130,62 @@ export default function BloodPressureListScreen() {
 
         {activeTab === 'Liste' ? (
           <View>
-            {/* Big Summary Card (Adapted uniformly for BP) */}
+            {/* Big Summary Card */}
             <View style={[styles.summaryCard, { backgroundColor: '#E11D48', shadowColor: '#E11D48' }]}>
-          <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
-          <View style={styles.summaryValueRow}>
-            <ThemedText style={styles.summaryValue}>118/76</ThemedText>
-            <ThemedText style={styles.summaryUnit}>mmHg</ThemedText>
-          </View>
+              <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
+              <View style={styles.summaryValueRow}>
+                <ThemedText style={styles.summaryValue}>{avgSys !== null ? `${avgSys}/${avgDia}` : '--/--'}</ThemedText>
+                <ThemedText style={styles.summaryUnit}>mmHg</ThemedText>
+              </View>
 
-          <View style={styles.summaryFooter}>
-            <View style={styles.pillNormal}>
-              <ThemedText style={styles.pillNormalText}>İdeal{'\n'}Aralık</ThemedText>
-            </View>
-            <View style={styles.trendInfo}>
-              <Ionicons name="pulse" size={16} color="#FFF" style={{ marginRight: 6, marginTop: 2 }} />
-              <ThemedText style={styles.trendText}>Nabız{'\n'}72 BPM</ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* List Section */}
-        {MOCK_DATA.map((group) => (
-          <View key={group.id} style={styles.groupContainer}>
-            <ThemedText style={styles.groupTitle}>{group.dateGroup}</ThemedText>
-
-            {group.items.map((item) => {
-              const valColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#0F172A';
-              const dotColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#10B981';
-
-              return (
-                <View key={item.id} style={styles.listItem}>
-                  <View style={styles.itemLeft}>
-                    <View style={styles.iconCircle}>
-                      <FontAwesome5 name={item.icon as any} size={16} color="#475569" />
-                    </View>
-                    <View>
-                      <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                        <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
-                        <ThemedText style={styles.itemTime}>{item.time}  •  {item.detail}</ThemedText>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.itemRight}>
-                    <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
-                    <ThemedText style={styles.itemUnit}>mmHg</ThemedText>
-                  </View>
+              <View style={styles.summaryFooter}>
+                <View style={styles.pillNormal}>
+                  <ThemedText style={styles.pillNormalText}>Bugün {avgSys !== null ? 'Kayıt Var' : 'Kayıt Yok'}</ThemedText>
                 </View>
-              );
-            })}
+              </View>
+            </View>
+
+            {/* List Section */}
+            {formattedGroups.length > 0 ? (
+              formattedGroups.map((group) => (
+                <View key={group.id} style={styles.groupContainer}>
+                  <ThemedText style={styles.groupTitle}>{group.dateGroup}</ThemedText>
+
+                  {group.items.map((item: any) => {
+                    const valColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#0F172A';
+                    const dotColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#10B981';
+
+                    return (
+                      <View key={item.id} style={styles.listItem}>
+                        <View style={styles.itemLeft}>
+                          <View style={styles.iconCircle}>
+                            <FontAwesome5 name={item.icon as any} size={16} color="#475569" />
+                          </View>
+                          <View>
+                            <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                              <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
+                              <ThemedText style={styles.itemTime}>{item.time}  •  {item.detail}</ThemedText>
+                            </View>
+                          </View>
+                        </View>
+
+                        <View style={styles.itemRight}>
+                          <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
+                          <ThemedText style={styles.itemUnit}>mmHg</ThemedText>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))
+        ) : (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Ionicons name="pulse" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
+            <ThemedText style={{ fontSize: 16, fontWeight: '700', color: '#64748B' }}>Henüz kayıt bulunamadı.</ThemedText>
+            <ThemedText style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
           </View>
-        ))}
+        )}
           </View>
         ) : (
           <AnalysisView />

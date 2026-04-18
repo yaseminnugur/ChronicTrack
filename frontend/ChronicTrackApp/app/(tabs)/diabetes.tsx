@@ -3,30 +3,92 @@ import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
-
-const MOCK_DATA = [
-  {
-    id: '1',
-    dateGroup: 'Bugün, 24 Ekim',
-    items: [
-      { id: '1-1', title: 'Kahvaltı Öncesi', time: '08:30', value: '95', unit: 'MG/DL', type: 'normal', icon: 'moon', iconFam: 'Ionicons' },
-      { id: '1-2', title: 'Öğle Yemeği Sonrası', time: '14:15', value: '142', unit: 'MG/DL', type: 'high', icon: 'silverware-fork-knife', iconFam: 'MaterialCommunityIcons' },
-      { id: '1-3', title: 'Egzersiz Sonrası', time: '17:45', value: '110', unit: 'MG/DL', type: 'normal', icon: 'barbell', iconFam: 'Ionicons' },
-    ]
-  },
-  {
-    id: '2',
-    dateGroup: 'Dün, 23 Ekim',
-    items: [
-      { id: '2-1', title: 'Yatmadan Önce', time: '22:45', value: '102', unit: 'MG/DL', type: 'neutral', icon: 'moon', iconFam: 'Ionicons' },
-    ]
-  }
-];
+import { getBloodSugars } from '../../services/healthService';
 
 export default function DiabetesListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchRecords = async () => {
+        try {
+          const data = await getBloodSugars();
+          setRecords(data || []);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchRecords();
+    }, [])
+  );
+
+  const groupData = () => {
+    const groups: any = {};
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let todaySum = 0;
+    let todayCount = 0;
+
+    records.forEach((item) => {
+      const d = new Date(item.measuredAt);
+      const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+      
+      let dateGroup = dateStr;
+      if (d.toDateString() === today.toDateString()) {
+         dateGroup = 'Bugün, ' + dateStr;
+         todaySum += item.glucose;
+         todayCount++;
+      }
+      else if (d.toDateString() === yesterday.toDateString()) {
+         dateGroup = 'Dün, ' + dateStr;
+      }
+      
+      if (!groups[dateGroup]) groups[dateGroup] = [];
+      
+      const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      let type = 'normal';
+      if (item.glucose > 140) type = 'high';
+      else if (item.glucose < 70) type = 'danger';
+      
+      let icon = 'tint';
+      let iconFam = 'FontAwesome5';
+      if (item.mealState === 'Yemek Öncesi') { icon = 'silverware-fork-knife'; iconFam = 'MaterialCommunityIcons'; }
+      else if (item.mealState === 'Yemek Sonrası') { icon = 'silverware-fork-knife'; iconFam = 'MaterialCommunityIcons'; }
+      else if (item.mealState === 'Uyku Öncesi') { icon = 'moon'; iconFam = 'Ionicons'; }
+      else if (item.mealState === 'Açlık') { icon = 'food-off'; iconFam = 'MaterialCommunityIcons'; }
+      
+      groups[dateGroup].push({
+        id: item.id,
+        title: item.mealState || 'Ölçüm',
+        time: timeStr,
+        value: item.glucose.toString(),
+        unit: 'MG/DL',
+        type: type,
+        icon: icon,
+        iconFam: iconFam
+      });
+    });
+
+    const averageToday = todayCount > 0 ? Math.round(todaySum / todayCount) : null;
+    
+    const formattedGroups = Object.keys(groups).map((key, index) => ({
+      id: index.toString(),
+      dateGroup: key,
+      items: groups[key]
+    }));
+
+    return { formattedGroups, averageToday };
+  };
+
+  const { formattedGroups, averageToday } = groupData();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
@@ -74,56 +136,60 @@ export default function DiabetesListScreen() {
           <View>
             {/* Big Summary Card */}
             <View style={styles.summaryCard}>
-          <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
-          <View style={styles.summaryValueRow}>
-            <ThemedText style={styles.summaryValue}>104</ThemedText>
-            <ThemedText style={styles.summaryUnit}>mg/dL</ThemedText>
-          </View>
+              <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
+              <View style={styles.summaryValueRow}>
+                <ThemedText style={styles.summaryValue}>{averageToday !== null ? averageToday : '--'}</ThemedText>
+                <ThemedText style={styles.summaryUnit}>mg/dL</ThemedText>
+              </View>
 
-          <View style={styles.summaryFooter}>
-            <View style={styles.pillNormal}>
-              <ThemedText style={styles.pillNormalText}>Normal{'\n'}Aralık</ThemedText>
-            </View>
-            <View style={styles.trendInfo}>
-              <Ionicons name="trending-down" size={14} color="#FFF" style={{ marginRight: 4, marginTop: 2 }} />
-              <ThemedText style={styles.trendText}>dünden bu yana{'\n'}-4%</ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* List Section */}
-        {MOCK_DATA.map((group) => (
-          <View key={group.id} style={styles.groupContainer}>
-            <ThemedText style={styles.groupTitle}>{group.dateGroup}</ThemedText>
-
-            {group.items.map((item) => {
-              const valColor = item.type === 'high' ? '#DC2626' : item.type === 'normal' ? '#0284C7' : '#475569';
-
-              return (
-                <View key={item.id} style={styles.listItem}>
-                  <View style={styles.itemLeft}>
-                    <View style={styles.iconCircle}>
-                      {item.iconFam === 'Ionicons' ? (
-                        <Ionicons name={item.icon as any} size={20} color={valColor} />
-                      ) : (
-                        <MaterialCommunityIcons name={item.icon as any} size={20} color={valColor} />
-                      )}
-                    </View>
-                    <View>
-                      <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
-                      <ThemedText style={styles.itemTime}>{item.time}</ThemedText>
-                    </View>
-                  </View>
-
-                  <View style={styles.itemRight}>
-                    <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
-                    <ThemedText style={styles.itemUnit}>{item.unit}</ThemedText>
-                  </View>
+              <View style={styles.summaryFooter}>
+                <View style={styles.pillNormal}>
+                  <ThemedText style={styles.pillNormalText}>Bugün {averageToday ? 'Kayıt Var' : 'Kayıt Yok'}</ThemedText>
                 </View>
-              );
-            })}
+              </View>
+            </View>
+
+            {/* List Section */}
+            {formattedGroups.length > 0 ? (
+              formattedGroups.map((group) => (
+                <View key={group.id} style={styles.groupContainer}>
+                  <ThemedText style={styles.groupTitle}>{group.dateGroup}</ThemedText>
+
+                  {group.items.map((item: any) => {
+                    const valColor = item.type === 'high' ? '#DC2626' : item.type === 'danger' ? '#991B1B' : '#0284C7';
+
+                    return (
+                      <View key={item.id} style={styles.listItem}>
+                        <View style={styles.itemLeft}>
+                          <View style={styles.iconCircle}>
+                            {item.iconFam === 'Ionicons' ? (
+                              <Ionicons name={item.icon as any} size={20} color={valColor} />
+                            ) : (
+                              <MaterialCommunityIcons name={item.icon as any} size={20} color={valColor} />
+                            )}
+                          </View>
+                          <View>
+                            <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
+                            <ThemedText style={styles.itemTime}>{item.time}</ThemedText>
+                          </View>
+                        </View>
+
+                        <View style={styles.itemRight}>
+                          <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
+                          <ThemedText style={styles.itemUnit}>{item.unit}</ThemedText>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))
+        ) : (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Ionicons name="water-outline" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
+            <ThemedText style={{ fontSize: 16, fontWeight: '700', color: '#64748B' }}>Henüz kayıt bulunamadı.</ThemedText>
+            <ThemedText style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
           </View>
-        ))}
+        )}
           </View>
         ) : (
           <AnalysisView />

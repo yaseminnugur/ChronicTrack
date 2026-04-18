@@ -1,10 +1,12 @@
 import express from 'express';
-import { createUser, getUsers } from '../controllers/userController.ts';
+import { getProfile, updateProfile, getUsers } from '../controllers/userController.ts';
+import { authenticate } from '../middlewares/auth.ts';
 
 const router = express.Router();
 
-// Route: /api/users
-router.post('/', createUser); // Veri eklemek için POST
-router.get('/', getUsers);    // Tüm verileri görmek için GET
+router.get('/profile', authenticate, getProfile);
+router.put('/profile', authenticate, updateProfile);
+
+router.get('/', getUsers);
 
 export default router;

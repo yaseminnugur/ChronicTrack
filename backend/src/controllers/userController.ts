@@ -1,50 +1,108 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
 
-// Yeni Kullanıcı Oluştur (POST /api/users)
-export const createUser = async (req: Request, res: Response): Promise<void> => {
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, name } = req.body;
+    const userId = req.userId;
 
-    // Basit doğrulama (Validation)
-    if (!email) {
-      res.status(400).json({ error: 'Email alanı zorunludur.' });
+    if (!userId) {
+      res.status(401).json({ error: 'Yetkilendirme hatası.' });
       return;
     }
 
-    // Veritabanında (DB) bu email zaten var mı kontrol et
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      res.status(400).json({ error: 'Bu email adresi zaten kullanılıyor.' });
-      return;
-    }
-
-    // Prisma ile DB'ye yeni kaydı at
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        name,
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        weight: true,
+        height: true,
+        age: true,
+        isSmoking: true,
+        activityLevel: true,
+        saltLevel: true,
+        chronicConditions: true,
+        isOnboarded: true,
+        createdAt: true,
       },
     });
 
-    res.status(201).json({
-      message: 'Kullanıcı başarıyla oluşturuldu!',
-      user: newUser
-    });
+    if (!user) {
+      res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+      return;
+    }
 
+    res.status(200).json({ user });
   } catch (error) {
-    console.error('Kullanıcı oluşturma hatası:', error);
+    console.error('Profil getirme hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });
   }
 };
 
-// Tüm Kullanıcıları Getir (GET /api/users) - İsteğe Bağlı Kontrol İçin
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Yetkilendirme hatası.' });
+      return;
+    }
+
+    const { name, weight, height, age, isSmoking, activityLevel, saltLevel, chronicConditions } = req.body;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(weight !== undefined && { weight: weight ? parseFloat(weight) : null }),
+        ...(height !== undefined && { height: height ? parseFloat(height) : null }),
+        ...(age !== undefined && { age: age ? parseInt(age) : null }),
+        ...(isSmoking !== undefined && { isSmoking }),
+        ...(activityLevel !== undefined && { activityLevel }),
+        ...(saltLevel !== undefined && { saltLevel }),
+        ...(chronicConditions !== undefined && {
+          chronicConditions: Array.isArray(chronicConditions)
+            ? chronicConditions.join(',')
+            : chronicConditions,
+        }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        weight: true,
+        height: true,
+        age: true,
+        isSmoking: true,
+        activityLevel: true,
+        saltLevel: true,
+        chronicConditions: true,
+        isOnboarded: true,
+      },
+    });
+
+    res.status(200).json({
+      message: 'Profil güncellendi.',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Profil güncelleme hatası:', error);
+    res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });
+  }
+};
+
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isOnboarded: true,
+        createdAt: true,
+      },
+    });
     res.status(200).json(users);
   } catch (error) {
     console.error('Kullanıcıları listeleme hatası:', error);

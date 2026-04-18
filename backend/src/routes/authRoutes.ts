@@ -4,8 +4,6 @@ import { register, login, completeOnboarding } from '../controllers/authControll
 const router = express.Router();
 
 router.post('/register', register);
-
 router.post('/login', login);
-router.put('/complete-onboarding', completeOnboarding);
 
 export default router;

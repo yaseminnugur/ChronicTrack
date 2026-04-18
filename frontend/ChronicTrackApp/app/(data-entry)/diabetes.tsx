@@ -7,6 +7,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router, useLocalSearchParams } from 'expo-router';
+import { saveBloodSugar } from '../../services/healthService';
 
 export default function DiabetesEntryScreen() {
   const colorScheme = useColorScheme();
@@ -17,13 +18,27 @@ export default function DiabetesEntryScreen() {
   const [diabetesType, setDiabetesType] = useState('');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [sugarLevel, setSugarLevel] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // In a real app we would save 'diabetesType' and 'sugarLevel' to backend/storage
-    if (next === 'bloodPressure') {
-      router.push('/(data-entry)/bloodPressure');
-    } else {
-      router.replace('/(tabs)');
+  const handleSave = async () => {
+    try {
+      if (sugarLevel) {
+        setSaving(true);
+        await saveBloodSugar({
+          glucose: sugarLevel,
+          mealState: 'Belirtilmedi',
+          notes: diabetesType,
+        });
+      }
+      if (next === 'bloodPressure') {
+        router.push('/(data-entry)/bloodPressure');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -60,15 +75,14 @@ export default function DiabetesEntryScreen() {
           </ThemedText>
         </View>
 
-        {/* Section 1: Durum Detayları */}
         <View style={[styles.card, { backgroundColor: colors.inputBackground }]}>
           <View style={styles.cardHeaderRow}>
             <FontAwesome5 name="briefcase-medical" size={16} color={colors.primary} />
             <ThemedText style={[styles.cardHeaderTitle, { color: colors.primary }]}>Durum Detayları</ThemedText>
           </View>
-          
+
           <ThemedText style={styles.inputLabel}>Diyabet Tipi</ThemedText>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.dropdownTrigger, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
             activeOpacity={0.8}
             onPress={() => setShowTypeDropdown(!showTypeDropdown)}
@@ -80,15 +94,15 @@ export default function DiabetesEntryScreen() {
           </TouchableOpacity>
           {showTypeDropdown && (
             <View style={[styles.dropdownMenu, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <TouchableOpacity 
-                style={styles.dropdownOption} 
+              <TouchableOpacity
+                style={styles.dropdownOption}
                 onPress={() => { setDiabetesType('Tip 1'); setShowTypeDropdown(false); }}
               >
                 <ThemedText style={{ color: colors.text }}>Tip 1</ThemedText>
               </TouchableOpacity>
               <View style={[styles.dropdownDivider, { backgroundColor: colors.border }]} />
-              <TouchableOpacity 
-                style={styles.dropdownOption} 
+              <TouchableOpacity
+                style={styles.dropdownOption}
                 onPress={() => { setDiabetesType('Tip 2'); setShowTypeDropdown(false); }}
               >
                 <ThemedText style={{ color: colors.text }}>Tip 2</ThemedText>
@@ -97,12 +111,10 @@ export default function DiabetesEntryScreen() {
           )}
         </View>
 
-        {/* Section 2 Title */}
         <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
           3 Aylık Ortalama Şeker Değerleri (HbA1c)
         </ThemedText>
 
-        {/* Section 2 Card */}
         <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
           <View style={styles.cardHeaderRowSpace}>
             <ThemedText style={styles.inputLabelBold}>Şeker Ölçümü</ThemedText>
@@ -112,7 +124,7 @@ export default function DiabetesEntryScreen() {
           </View>
 
           <View style={styles.bigInputRow}>
-            <TextInput 
+            <TextInput
               style={[styles.hugeInput, { color: colors.text, borderColor: colors.inputBackground }]}
               value={sugarLevel}
               onChangeText={handleDecimalInput}

@@ -6,6 +6,7 @@ import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { saveBloodSugar } from '../services/healthService';
 
 const MEAL_OPTIONS = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık', 'Diğerleri'];
 
@@ -20,9 +21,24 @@ export default function AddDiabetesScreen() {
   
   const [mealState, setMealState] = useState(MEAL_OPTIONS[0]);
   const [showMealModal, setShowMealModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    router.back();
+  const handleSave = async () => {
+    try {
+      if (glucose) {
+        setSaving(true);
+        await saveBloodSugar({
+          glucose,
+          mealState,
+          notes,
+        });
+      }
+      router.back();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onChangeDate = (event: any, selectedDate?: Date) => {
@@ -140,6 +156,7 @@ export default function AddDiabetesScreen() {
         <CustomButton
           title="Ölçümü Kaydet"
           onPress={handleSave}
+          loading={saving}
           leftIcon={<Ionicons name="checkmark-circle" size={18} color="#FFF" style={{ marginRight: 8 }} />}
         />
       </View>

@@ -6,23 +6,38 @@ import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
+import { saveBloodPressure } from '../../services/healthService';
 
 export default function BloodPressureEntryScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
-  const { next } = useLocalSearchParams<{ next: string }>();
 
   const [sets, setSets] = useState([
-    { id: 1, sis: '120', dia: '80', pulse: '72' },
+    { id: 1, sis: '', dia: '', pulse: '' },
     { id: 2, sis: '', dia: '', pulse: '' },
     { id: 3, sis: '', dia: '', pulse: '' },
   ]);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // Navigate to tabs at the end of the entry flow
-    router.replace('/(tabs)');
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const validSets = sets.filter(s => s.sis && s.dia);
+      for (const set of validSets) {
+        await saveBloodPressure({
+          systolic: set.sis,
+          diastolic: set.dia,
+          pulse: set.pulse || '0',
+        });
+      }
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSkip = () => {
@@ -93,7 +108,7 @@ export default function BloodPressureEntryScreen() {
                     <ThemedText style={styles.setTitle}>Ölçüm Seti</ThemedText>
 
                     <ThemedText style={styles.inputLabel}>Sistolik (Büyük)</ThemedText>
-                    <TextInput 
+                    <TextInput
                       style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
                       value={item.sis}
                       onChangeText={(val) => updateSet(item.id, 'sis', val)}
@@ -104,7 +119,7 @@ export default function BloodPressureEntryScreen() {
                     />
 
                     <ThemedText style={styles.inputLabel}>Diyastolik (Küçük)</ThemedText>
-                    <TextInput 
+                    <TextInput
                       style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
                       value={item.dia}
                       onChangeText={(val) => updateSet(item.id, 'dia', val)}
@@ -115,7 +130,7 @@ export default function BloodPressureEntryScreen() {
                     />
 
                     <ThemedText style={styles.inputLabel}>Nabız (Dakika)</ThemedText>
-                    <TextInput 
+                    <TextInput
                       style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
                       value={item.pulse}
                       onChangeText={(val) => updateSet(item.id, 'pulse', val)}

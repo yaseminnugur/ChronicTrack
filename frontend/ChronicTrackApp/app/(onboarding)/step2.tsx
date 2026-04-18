@@ -7,10 +7,8 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL as string;
+import { completeOnboardingWithConditions } from '../../services/onboardingService';
 
 export default function Step2Screen() {
   const colorScheme = useColorScheme();
@@ -138,11 +136,7 @@ export default function Step2Screen() {
             onPress={async () => {
               try {
                 setLoading(true);
-                if (userToken) {
-                  await axios.put(`${API_URL}/auth/complete-onboarding`, {}, {
-                    headers: { Authorization: `Bearer ${userToken}` }
-                  });
-                }
+                await completeOnboardingWithConditions(selectedConditions);
                 await completeOnboarding();
 
                 if (selectedConditions.includes('Diyabet')) {

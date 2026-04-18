@@ -7,25 +7,26 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
+import { saveStep1Profile } from '../../services/onboardingService';
 
 export default function Step1Screen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const colors = Colors[theme as keyof typeof Colors];
-  
+
+  const [loading, setLoading] = useState(false);
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [age, setAge] = useState('');
 
   const handleNumberInput = (text: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
-    // Sadece rakamlara izin ver (harf ve özel karakterleri sil)
     const numericValue = text.replace(/[^0-9]/g, '');
     setter(numericValue);
   };
-  
+
   const [smoker, setSmoker] = useState(false);
-  const [activityLevel, setActivityLevel] = useState('Orta'); // Hareketsiz, Orta, Aktif, Sporcu
-  const [saltLevel, setSaltLevel] = useState('Orta'); // Düşük, Orta, Yüksek
+  const [activityLevel, setActivityLevel] = useState('Orta');
+  const [saltLevel, setSaltLevel] = useState('Orta');
 
   const activityOptions = [
     { id: 'Hareketsiz', icon: 'chair', label: 'Hareketsiz' },
@@ -71,7 +72,7 @@ export default function Step1Screen() {
           <View style={styles.inputWrapper}>
             <ThemedText style={styles.inputLabel}>KİLO (KG)</ThemedText>
             <View style={[styles.inputBox, { backgroundColor: colors.cardBackground }]}>
-              <TextInput 
+              <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={weight}
                 onChangeText={(text) => handleNumberInput(text, setWeight)}
@@ -82,11 +83,11 @@ export default function Step1Screen() {
               />
             </View>
           </View>
-          
+
           <View style={styles.inputWrapper}>
             <ThemedText style={styles.inputLabel}>BOY (CM)</ThemedText>
             <View style={[styles.inputBox, { backgroundColor: colors.cardBackground }]}>
-              <TextInput 
+              <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={height}
                 onChangeText={(text) => handleNumberInput(text, setHeight)}
@@ -101,7 +102,7 @@ export default function Step1Screen() {
           <View style={styles.inputWrapper}>
             <ThemedText style={styles.inputLabel}>YAŞ</ThemedText>
             <View style={[styles.inputBox, { backgroundColor: colors.cardBackground }]}>
-              <TextInput 
+              <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={age}
                 onChangeText={(text) => handleNumberInput(text, setAge)}
@@ -141,26 +142,26 @@ export default function Step1Screen() {
             {activityOptions.map((opt) => {
               const isActive = activityLevel === opt.id;
               return (
-                <TouchableOpacity 
-                  key={opt.id} 
+                <TouchableOpacity
+                  key={opt.id}
                   style={[
-                    styles.gridItem, 
+                    styles.gridItem,
                     { backgroundColor: colors.cardBackground },
                     isActive && { backgroundColor: '#DDF0FF', borderColor: colors.primary, borderWidth: 1 }
                   ]}
                   onPress={() => setActivityLevel(opt.id)}
                   activeOpacity={0.7}
                 >
-                  <FontAwesome5 
-                    name={opt.icon} 
-                    size={20} 
-                    color={isActive ? colors.primary : colors.textSecondary} 
-                    style={{ marginBottom: 8 }} 
+                  <FontAwesome5
+                    name={opt.icon}
+                    size={20}
+                    color={isActive ? colors.primary : colors.textSecondary}
+                    style={{ marginBottom: 8 }}
                   />
                   <ThemedText style={[
-                      { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-                      isActive && { color: colors.primary }
-                    ]}>
+                    { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+                    isActive && { color: colors.primary }
+                  ]}>
                     {opt.label}
                   </ThemedText>
                 </TouchableOpacity>
@@ -175,10 +176,10 @@ export default function Step1Screen() {
             {saltOptions.map((opt) => {
               const isActive = saltLevel === opt.id;
               return (
-                <TouchableOpacity 
-                  key={opt.id} 
+                <TouchableOpacity
+                  key={opt.id}
                   style={[
-                    styles.rowItem, 
+                    styles.rowItem,
                     { backgroundColor: colors.cardBackground },
                     isActive && { backgroundColor: '#DDF0FF', borderColor: colors.primary, borderWidth: 1 }
                   ]}
@@ -186,9 +187,9 @@ export default function Step1Screen() {
                   activeOpacity={0.7}
                 >
                   <ThemedText style={[
-                      { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
-                      isActive && { color: colors.primary }
-                    ]}>
+                    { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+                    isActive && { color: colors.primary }
+                  ]}>
                     {opt.label}
                   </ThemedText>
                 </TouchableOpacity>
@@ -199,7 +200,25 @@ export default function Step1Screen() {
 
         <CustomButton
           title="Profili Kaydet"
-          onPress={() => router.push('/(onboarding)/step2')}
+          loading={loading}
+          onPress={async () => {
+            try {
+              setLoading(true);
+              await saveStep1Profile({
+                weight,
+                height,
+                age,
+                isSmoking: smoker,
+                activityLevel,
+                saltLevel,
+              });
+              router.push('/(onboarding)/step2');
+            } catch (error) {
+              console.error('Profil kaydedilirken hata oluştu', error);
+            } finally {
+              setLoading(false);
+            }
+          }}
           style={{ marginBottom: 40 }}
           rightIcon={<FontAwesome5 name="save" size={18} color="#FFF" style={{ marginRight: 8 }} />}
         />
