@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
+import { StyleSheet, View, Platform, Dimensions, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -64,7 +64,11 @@ export default function RegisterScreen() {
         style={{ flex: 1 }}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.mainContent}>
+          <ScrollView
+            contentContainerStyle={styles.mainContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.header}>
               <View style={[styles.logoContainer, { backgroundColor: '#E1EBF9' }]}>
                 <FontAwesome5 name="shield-alt" size={24} color={colors.primary} />
@@ -153,7 +157,7 @@ export default function RegisterScreen() {
                 </ThemedText>
               </View>
             </ThemedView>
-          </View>
+          </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -162,15 +166,17 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   mainContent: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
+    marginBottom: 28,
+    marginTop: 8,
   },
   logoContainer: {
     width: 64,

@@ -9,29 +9,29 @@ export default function AddMeasurementScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         <View style={styles.pageHeader}>
           <ThemedText style={styles.pageTitle}>Ölçüm Ekle</ThemedText>
           <ThemedText style={styles.pageSubtitle}>
-            Güncellemek istediğiniz sağlık kaydı türünü seçin. Yeni okumalar yapıldığında bakıcınız bilgilendirilecektir.
+            Kaydetmek istediğiniz ölçüm türünü seçin. Düzenli takip, sağlığınızı daha iyi yönetmenize yardımcı olur.
           </ThemedText>
         </View>
 
         {/* GLUCOSE CARD */}
-        <TouchableOpacity 
-          style={styles.card} 
+        <TouchableOpacity
+          style={styles.card}
           activeOpacity={0.8}
           onPress={() => router.push('/add-diabetes')}
         >
           {/* Decorative Background Blob */}
           <View style={[styles.blob, { backgroundColor: '#F0F9FF' }]} />
-          
+
           <View style={[styles.iconCircle, { backgroundColor: '#DBEAFE' }]}>
             <Ionicons name="water" size={20} color="#1D4ED8" />
           </View>
 
           <ThemedText style={styles.cardTitle}>Kan Şekeri Ölçümü Ekle</ThemedText>
-          
+
           <ThemedText style={styles.cardSubtitle}>
             Metabolik eğilimleri takip etmek için yemeklerden önce veya sonra glikoz seviyelerini kaydedin.
           </ThemedText>
@@ -43,20 +43,20 @@ export default function AddMeasurementScreen() {
         </TouchableOpacity>
 
         {/* BLOOD PRESSURE CARD */}
-        <TouchableOpacity 
-          style={styles.card} 
+        <TouchableOpacity
+          style={styles.card}
           activeOpacity={0.8}
           onPress={() => router.push('/add-bloodPressure')}
         >
           {/* Decorative Background Blob */}
           <View style={[styles.blob, { backgroundColor: '#FFF1F2' }]} />
-          
+
           <View style={[styles.iconCircle, { backgroundColor: '#FCE7F3' }]}>
             <FontAwesome5 name="heartbeat" size={18} color="#BE123C" />
           </View>
 
           <ThemedText style={styles.cardTitle}>Tansiyon Ölçümü Ekle</ThemedText>
-          
+
           <ThemedText style={styles.cardSubtitle}>
             Kardiyovasküler sağlığı korumak için sistolik ve diyastolik değerleri takip edin.
           </ThemedText>
@@ -87,6 +87,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#0F172A',
     marginBottom: 12,
+    paddingTop: 8,
+    lineHeight: 36,
     letterSpacing: -0.5,
   },
   pageSubtitle: {

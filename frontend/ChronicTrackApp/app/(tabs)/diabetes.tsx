@@ -161,20 +161,20 @@ export default function DiabetesListScreen() {
 
             {/* HbA1c Card from Onboarding */}
             {onboardingData && onboardingData.hba1c && (
-              <View style={[styles.summaryCard, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, shadowColor: '#000', elevation: 2, padding: 16, marginBottom: 24, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 } }]}>
-                 <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
-                    <ThemedText style={{fontSize: 13, fontWeight: '700', color: '#64748B'}}>3 Aylık Şeker (HbA1c)</ThemedText>
-                    <View style={{ backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-                      <ThemedText style={{ fontSize: 10, color: '#1D4ED8', fontWeight: '700' }}>İlk Kayıt Verisi</ThemedText>
+              <View style={styles.hba1cCard}>
+                 <View style={styles.hba1cHeader}>
+                    <ThemedText style={styles.hba1cLabel}>3 Aylık Şeker (HbA1c)</ThemedText>
+                    <View style={styles.hba1cBadge}>
+                      <ThemedText style={styles.hba1cBadgeText}>İlk Kayıt Verisi</ThemedText>
                     </View>
                  </View>
-                 <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
-                    <ThemedText style={{fontSize: 32, fontWeight: '800', color: '#0F172A'}}>{onboardingData.hba1c}</ThemedText>
-                    <ThemedText style={{fontSize: 14, fontWeight: '600', color: '#64748B', marginLeft: 6}}>mg/dL</ThemedText>
+                 <View style={styles.hba1cValueRow}>
+                    <ThemedText style={styles.hba1cValue}>{onboardingData.hba1c}</ThemedText>
+                    <ThemedText style={styles.hba1cUnit}>mg/dL</ThemedText>
                  </View>
                  {onboardingData.diabetesType && (
-                   <ThemedText style={{ fontSize: 12, color: '#475569', marginTop: 8 }}>
-                     Diyabet Tipi: <ThemedText style={{fontWeight: '700'}}>{onboardingData.diabetesType}</ThemedText>
+                   <ThemedText style={styles.hba1cTypeText}>
+                     Diyabet Tipi: <ThemedText style={styles.hba1cTypeValue}>{onboardingData.diabetesType}</ThemedText>
                    </ThemedText>
                  )}
               </View>
@@ -429,5 +429,66 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#64748B',
     marginTop: 2,
+  },
+  hba1cCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  hba1cHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  hba1cLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  hba1cBadge: {
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  hba1cBadgeText: {
+    fontSize: 10,
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  hba1cValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  hba1cValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#0F172A',
+    lineHeight: 42,
+  },
+  hba1cUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  hba1cTypeText: {
+    fontSize: 13,
+    color: '#475569',
+    marginTop: 8,
+  },
+  hba1cTypeValue: {
+    fontWeight: '700',
+    color: '#1E293B',
   }
 });
