@@ -9,8 +9,8 @@ export const loginSchema = z.object({
     .string()
     .min(1, 'Şifre zorunludur')
     .min(6, 'Şifre en az 6 karakter olmalıdır')
-    .regex(/[a-z]/, 'Şifre en az bir küçük harf içermelidir')
-    .regex(/[A-Z]/, 'Şifre en az bir büyük harf içermelidir'),
+    .regex(/[a-zçğıöşü]/, 'Şifre en az bir küçük harf içermelidir')
+    .regex(/[A-ZÇĞİÖŞÜ]/, 'Şifre en az bir büyük harf içermelidir'),
 });
 
 export const registerSchema = z.object({
@@ -26,8 +26,8 @@ export const registerSchema = z.object({
     .string()
     .min(1, 'Şifre zorunludur')
     .min(6, 'Şifre en az 6 karakter olmalıdır')
-    .regex(/[a-z]/, 'Şifre en az bir küçük harf içermelidir')
-    .regex(/[A-Z]/, 'Şifre en az bir büyük harf içermelidir'),
+    .regex(/[a-zçğıöşü]/, 'Şifre en az bir küçük harf içermelidir')
+    .regex(/[A-ZÇĞİÖŞÜ]/, 'Şifre en az bir büyük harf içermelidir'),
   passwordConfirm: z
     .string()
     .min(1, 'Şifre tekrarı zorunludur'),
