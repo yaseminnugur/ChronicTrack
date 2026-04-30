@@ -50,7 +50,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { name, weight, height, age, isSmoking, activityLevel, saltLevel, chronicConditions } = req.body;
+    const { name, weight, height, age, isSmoking, activityLevel, saltLevel, chronicConditions, diabetesType, hba1c, bloodPressureData } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -87,6 +87,24 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       message: 'Profil güncellendi.',
       user: updatedUser,
     });
+
+    // Update onboarding data if any onboarding fields are provided
+    if (diabetesType !== undefined || hba1c !== undefined || bloodPressureData !== undefined) {
+      await prisma.onboardingData.upsert({
+        where: { userId },
+        update: {
+          ...(diabetesType !== undefined && { diabetesType: diabetesType || null }),
+          ...(hba1c !== undefined && { hba1c: hba1c ? Number(hba1c) : null }),
+          ...(bloodPressureData !== undefined && { bloodPressureData }),
+        },
+        create: {
+          userId,
+          diabetesType: diabetesType || null,
+          hba1c: hba1c ? Number(hba1c) : null,
+          bloodPressureData: bloodPressureData || null,
+        },
+      });
+    }
   } catch (error) {
     console.error('Profil güncelleme hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });

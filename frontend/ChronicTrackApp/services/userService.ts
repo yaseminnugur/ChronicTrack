@@ -14,6 +14,9 @@ export const updateUserProfile = async (data: {
   activityLevel?: string;
   saltLevel?: string;
   chronicConditions?: string | string[];
+  diabetesType?: string;
+  hba1c?: string;
+  bloodPressureData?: any;
 }) => {
     const response = await api.put('/users/profile', data);
     return response.data;

@@ -16,6 +16,12 @@ export default function EditProfileScreen() {
   const [saltLevel, setSaltLevel] = useState('Orta Düzey');
   const [onboardingData, setOnboardingData] = useState<any>(null);
 
+  // Editable onboarding fields
+  const [diabetesType, setDiabetesType] = useState('');
+  const [hba1c, setHba1c] = useState('');
+  const [bloodPressureData, setBloodPressureData] = useState<any[]>([]);
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +41,9 @@ export default function EditProfileScreen() {
           setSaltLevel(data.user.saltLevel || 'Orta Düzey');
           if (data.user.onboardingData) {
             setOnboardingData(data.user.onboardingData);
+            setDiabetesType(data.user.onboardingData.diabetesType || '');
+            setHba1c(data.user.onboardingData.hba1c ? data.user.onboardingData.hba1c.toString() : '');
+            setBloodPressureData(data.user.onboardingData.bloodPressureData || []);
           }
         }
       } catch (error) {
@@ -47,17 +56,34 @@ export default function EditProfileScreen() {
     fetchProfile();
   }, []);
 
+  const updateBPField = (index: number, field: 'sis' | 'dia' | 'pulse', value: string) => {
+    const updated = [...bloodPressureData];
+    updated[index] = { ...updated[index], [field]: value ? Number(value) : 0 };
+    setBloodPressureData(updated);
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      await updateUserProfile({
+      const updateData: any = {
         weight,
         height,
         age,
         isSmoking,
         activityLevel,
         saltLevel,
-      });
+      };
+
+      // Include onboarding data if it exists
+      if (onboardingData) {
+        updateData.diabetesType = diabetesType || undefined;
+        updateData.hba1c = hba1c || undefined;
+        if (bloodPressureData.length > 0) {
+          updateData.bloodPressureData = bloodPressureData;
+        }
+      }
+
+      await updateUserProfile(updateData);
       Alert.alert('Başarılı', 'Profil başarıyla güncellendi.', [
         { text: 'Tamam', onPress: () => router.back() }
       ]);
@@ -195,53 +221,113 @@ export default function EditProfileScreen() {
 
           </View>
 
-          {/* Section: ONBOARDING DATA */}
+          {/* Section: ONBOARDING DATA - Editable */}
           {onboardingData && (
             <View style={styles.formSection}>
               <View style={{flexDirection:'row', justifyContent:'space-between', alignItems: 'center', marginBottom: 20}}>
-                <ThemedText style={[styles.sectionLabel, {marginBottom: 0}]}>İLK KAYIT ÖLÇÜMLERİ (ONBOARDING)</ThemedText>
-                <FontAwesome5 name="lock" size={12} color="#94A3B8" />
+                <ThemedText style={[styles.sectionLabel, {marginBottom: 0}]}>SAĞLIK ÖLÇÜMLERİ</ThemedText>
+                <FontAwesome5 name="pen" size={12} color="#0EA5E9" />
               </View>
               
-              {onboardingData.diabetesType && (
+              {(onboardingData.diabetesType !== undefined || diabetesType) && (
                 <View style={[styles.inputGroup, { marginBottom: 16 }]}>
                   <ThemedText style={styles.inputLabel}>Diyabet Tipi</ThemedText>
-                  <View style={[styles.inputWrapper, {backgroundColor: '#E2E8F0', opacity: 0.8}]}>
-                     <ThemedText style={styles.input}>{onboardingData.diabetesType}</ThemedText>
-                     <FontAwesome5 name="tint" size={18} color="#475569" />
-                  </View>
+                  <TouchableOpacity
+                    style={[styles.inputWrapper, { justifyContent: 'space-between' }]}
+                    activeOpacity={0.8}
+                    onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+                  >
+                    <ThemedText style={[styles.input, { color: diabetesType ? '#0F172A' : '#94A3B8' }]}>
+                      {diabetesType || 'Tipinizi seçin'}
+                    </ThemedText>
+                    <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#475569" />
+                  </TouchableOpacity>
+                  {showTypeDropdown && (
+                    <View style={styles.dropdownMenu}>
+                      <TouchableOpacity
+                        style={styles.dropdownOption}
+                        onPress={() => { setDiabetesType('Tip 1'); setShowTypeDropdown(false); }}
+                      >
+                        <ThemedText style={[styles.dropdownText, diabetesType === 'Tip 1' && { color: '#0EA5E9', fontWeight: '700' }]}>Tip 1</ThemedText>
+                        {diabetesType === 'Tip 1' && <Ionicons name="checkmark" size={18} color="#0EA5E9" />}
+                      </TouchableOpacity>
+                      <View style={styles.dropdownDivider} />
+                      <TouchableOpacity
+                        style={styles.dropdownOption}
+                        onPress={() => { setDiabetesType('Tip 2'); setShowTypeDropdown(false); }}
+                      >
+                        <ThemedText style={[styles.dropdownText, diabetesType === 'Tip 2' && { color: '#0EA5E9', fontWeight: '700' }]}>Tip 2</ThemedText>
+                        {diabetesType === 'Tip 2' && <Ionicons name="checkmark" size={18} color="#0EA5E9" />}
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               )}
 
-              {onboardingData.hba1c && (
+              {(onboardingData.hba1c !== undefined || hba1c) && (
                 <View style={[styles.inputGroup, { marginBottom: 16 }]}>
                   <ThemedText style={styles.inputLabel}>3 Aylık Şeker (HbA1c)</ThemedText>
-                  <View style={[styles.inputWrapper, {backgroundColor: '#E2E8F0', opacity: 0.8}]}>
-                     <ThemedText style={styles.input}>{onboardingData.hba1c} mg/dL</ThemedText>
-                     <FontAwesome5 name="chart-line" size={18} color="#475569" />
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.input}
+                      value={hba1c}
+                      onChangeText={(text) => setHba1c(text.replace(/[^0-9.]/g, ''))}
+                      keyboardType="decimal-pad"
+                      placeholder="0.0"
+                      placeholderTextColor="#94A3B8"
+                    />
+                    <ThemedText style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>mg/dL</ThemedText>
                   </View>
                 </View>
               )}
 
-              {onboardingData.bloodPressureData && Array.isArray(onboardingData.bloodPressureData) && onboardingData.bloodPressureData.length > 0 && (
+              {bloodPressureData && bloodPressureData.length > 0 && (
                 <View style={styles.inputGroup}>
-                  <ThemedText style={styles.inputLabel}>Tansiyon Ölçümleri (Sistolik/Diyastolik)</ThemedText>
-                  <View style={{ backgroundColor: '#E2E8F0', borderRadius: 16, padding: 16, opacity: 0.8 }}>
-                    {onboardingData.bloodPressureData.map((bp: any, idx: number) => (
-                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: idx !== onboardingData.bloodPressureData.length - 1 ? 12 : 0 }}>
-                         <View style={{width: 24, height: 24, borderRadius: 12, backgroundColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginRight: 12}}>
-                           <ThemedText style={{fontSize: 10, fontWeight: '700', color: '#475569'}}>{idx + 1}</ThemedText>
-                         </View>
-                         <ThemedText style={{ fontSize: 15, fontWeight: '700', color: '#1E293B', flex: 1 }}>
-                           {bp.sis} / {bp.dia} <ThemedText style={{fontSize: 12, fontWeight: '500', color: '#64748B'}}>mmHg</ThemedText>
-                         </ThemedText>
-                         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                           <FontAwesome5 name="heartbeat" size={12} color="#EF4444" style={{marginRight: 6}} />
-                           <ThemedText style={{ fontSize: 13, fontWeight: '600', color: '#475569' }}>{bp.pulse} bpm</ThemedText>
-                         </View>
+                  <ThemedText style={styles.inputLabel}>Tansiyon Ölçümleri</ThemedText>
+                  {bloodPressureData.map((bp: any, idx: number) => (
+                    <View key={idx} style={styles.bpEditRow}>
+                      <View style={styles.bpIndexCircle}>
+                        <ThemedText style={styles.bpIndexText}>{idx + 1}</ThemedText>
                       </View>
-                    ))}
-                  </View>
+                      <View style={styles.bpInputGroup}>
+                        <View style={styles.bpInputWrapper}>
+                          <TextInput
+                            style={styles.bpInput}
+                            value={bp.sis?.toString() || ''}
+                            onChangeText={(text) => updateBPField(idx, 'sis', text.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="Sis"
+                            placeholderTextColor="#94A3B8"
+                            maxLength={3}
+                          />
+                          <ThemedText style={styles.bpSlash}>/</ThemedText>
+                          <TextInput
+                            style={styles.bpInput}
+                            value={bp.dia?.toString() || ''}
+                            onChangeText={(text) => updateBPField(idx, 'dia', text.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="Dia"
+                            placeholderTextColor="#94A3B8"
+                            maxLength={3}
+                          />
+                          <ThemedText style={styles.bpUnitText}>mmHg</ThemedText>
+                        </View>
+                        <View style={styles.bpPulseWrapper}>
+                          <FontAwesome5 name="heartbeat" size={12} color="#EF4444" style={{marginRight: 6}} />
+                          <TextInput
+                            style={styles.bpPulseInput}
+                            value={bp.pulse?.toString() || ''}
+                            onChangeText={(text) => updateBPField(idx, 'pulse', text.replace(/[^0-9]/g, ''))}
+                            keyboardType="numeric"
+                            placeholder="Nabız"
+                            placeholderTextColor="#94A3B8"
+                            maxLength={3}
+                          />
+                          <ThemedText style={styles.bpUnitText}>bpm</ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>
@@ -502,5 +588,103 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
-  }
+  },
+  dropdownMenu: {
+    marginTop: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  dropdownText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    width: '100%',
+  },
+  bpEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  bpIndexCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  bpIndexText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  bpInputGroup: {
+    flex: 1,
+  },
+  bpInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  bpInput: {
+    width: 50,
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  bpSlash: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginHorizontal: 6,
+  },
+  bpUnitText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginLeft: 8,
+  },
+  bpPulseWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bpPulseInput: {
+    width: 50,
+    height: 32,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
 });
