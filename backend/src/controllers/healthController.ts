@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
 import { safeParseFloat, safeParseInt, isValidNumber } from '../utils/numberUtils.ts';
+import { validateBloodSugarInput, validateBloodPressureInput } from '../utils/healthValidation.ts';
 
 export const addBloodSugar = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -13,6 +14,16 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
 
     if (!glucose || !isValidNumber(glucose)) {
       res.status(400).json({ error: 'Geçerli bir glikoz değeri girin.' });
+      return;
+    }
+
+    // Min/max validasyon (medikal referanslara göre)
+    const validation = validateBloodSugarInput(glucose);
+    if (!validation.isValid) {
+      res.status(400).json({
+        error: validation.errors[0].message,
+        validationErrors: validation.errors,
+      });
       return;
     }
 
@@ -45,6 +56,16 @@ export const addBloodPressure = async (req: Request, res: Response): Promise<voi
 
     if (!systolic || !diastolic) {
       res.status(400).json({ error: 'Sistolik ve diyastolik değerleri zorunludur.' });
+      return;
+    }
+
+    // Min/max validasyon (medikal referanslara göre)
+    const validation = validateBloodPressureInput(systolic, diastolic, pulse);
+    if (!validation.isValid) {
+      res.status(400).json({
+        error: validation.errors[0].message,
+        validationErrors: validation.errors,
+      });
       return;
     }
 

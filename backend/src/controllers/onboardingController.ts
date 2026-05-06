@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
 import { safeParseFloat, safeParseInt } from '../utils/numberUtils.ts';
+import { validateHbA1cInput, validateBloodPressureInput } from '../utils/healthValidation.ts';
 
 export const saveProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -97,6 +98,33 @@ export const saveOnboardingData = async (req: Request, res: Response): Promise<v
     }
 
     const { diabetesType, hba1c, bloodPressureData } = req.body;
+
+    // HbA1c validasyonu (medikal referanslara göre)
+    if (hba1c) {
+      const hba1cValidation = validateHbA1cInput(hba1c);
+      if (!hba1cValidation.isValid) {
+        res.status(400).json({
+          error: hba1cValidation.errors[0].message,
+          validationErrors: hba1cValidation.errors,
+        });
+        return;
+      }
+    }
+
+    // Tansiyon setleri validasyonu (medikal referanslara göre)
+    if (bloodPressureData && Array.isArray(bloodPressureData)) {
+      for (let i = 0; i < bloodPressureData.length; i++) {
+        const set = bloodPressureData[i];
+        const bpValidation = validateBloodPressureInput(set.sis, set.dia, set.pulse);
+        if (!bpValidation.isValid) {
+          res.status(400).json({
+            error: `Set ${i + 1}: ${bpValidation.errors[0].message}`,
+            validationErrors: bpValidation.errors,
+          });
+          return;
+        }
+      }
+    }
 
     const onboardingData = await prisma.onboardingData.upsert({
       where: { userId },

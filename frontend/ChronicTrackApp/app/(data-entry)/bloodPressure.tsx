@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
 import { filterIntegerInput } from '../../utils/numberUtils';
+import { validateBloodPressure, HEALTH_RANGES } from '../../validations/healthValidation';
 
 export default function BloodPressureEntryScreen() {
   const colorScheme = useColorScheme();
@@ -21,8 +22,26 @@ export default function BloodPressureEntryScreen() {
     { id: 3, sis: '', dia: '', pulse: '' },
   ]);
   const [saving, setSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Doldurulmuş setlerin validasyonunu hesapla
+  const setValidations = useMemo(() => {
+    return sets.map(s => ({
+      id: s.id,
+      validation: (s.sis || s.dia) ? validateBloodPressure(s.sis, s.dia, s.pulse) : null,
+    }));
+  }, [sets]);
 
   const handleSave = async () => {
+    setShowErrors(true);
+
+    // Doldurulmuş setlerde hata var mı kontrol et
+    const filledSets = setValidations.filter(sv => sv.validation !== null);
+    const hasErrors = filledSets.some(sv => sv.validation && !sv.validation.isValid);
+    if (hasErrors) {
+      return;
+    }
+
     try {
       setSaving(true);
       const validSets = sets.filter(s => s.sis && s.dia);
@@ -111,38 +130,64 @@ export default function BloodPressureEntryScreen() {
                   <View style={styles.setInputColumn}>
                     <ThemedText style={styles.setTitle}>Ölçüm Seti</ThemedText>
 
-                    <ThemedText style={styles.inputLabel}>Sistolik (Büyük)</ThemedText>
-                    <TextInput
-                      style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
-                      value={item.sis}
-                      onChangeText={(val) => updateSet(item.id, 'sis', val)}
-                      placeholder="---"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      maxLength={3}
-                    />
+                    {(() => {
+                      const sv = setValidations.find(s => s.id === item.id);
+                      const errors = sv?.validation?.errors || {};
+                      return (
+                        <>
+                          <ThemedText style={styles.inputLabel}>Sistolik (Büyük)</ThemedText>
+                          <TextInput
+                            style={[
+                              styles.smallInput,
+                              { color: colors.text, backgroundColor: colors.background, borderColor: showErrors && errors.systolic ? '#FCA5A5' : colors.border }
+                            ]}
+                            value={item.sis}
+                            onChangeText={(val) => updateSet(item.id, 'sis', val)}
+                            placeholder="---"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            maxLength={3}
+                          />
+                          {showErrors && errors.systolic ? (
+                            <ThemedText style={styles.fieldError}>{errors.systolic}</ThemedText>
+                          ) : null}
 
-                    <ThemedText style={styles.inputLabel}>Diyastolik (Küçük)</ThemedText>
-                    <TextInput
-                      style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
-                      value={item.dia}
-                      onChangeText={(val) => updateSet(item.id, 'dia', val)}
-                      placeholder="---"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      maxLength={3}
-                    />
+                          <ThemedText style={styles.inputLabel}>Diyastolik (Küçük)</ThemedText>
+                          <TextInput
+                            style={[
+                              styles.smallInput,
+                              { color: colors.text, backgroundColor: colors.background, borderColor: showErrors && errors.diastolic ? '#FCA5A5' : colors.border }
+                            ]}
+                            value={item.dia}
+                            onChangeText={(val) => updateSet(item.id, 'dia', val)}
+                            placeholder="---"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            maxLength={3}
+                          />
+                          {showErrors && errors.diastolic ? (
+                            <ThemedText style={styles.fieldError}>{errors.diastolic}</ThemedText>
+                          ) : null}
 
-                    <ThemedText style={styles.inputLabel}>Nabız (Dakika)</ThemedText>
-                    <TextInput
-                      style={[styles.smallInput, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]}
-                      value={item.pulse}
-                      onChangeText={(val) => updateSet(item.id, 'pulse', val)}
-                      placeholder="---"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      maxLength={3}
-                    />
+                          <ThemedText style={styles.inputLabel}>Nabız (Dakika)</ThemedText>
+                          <TextInput
+                            style={[
+                              styles.smallInput,
+                              { color: colors.text, backgroundColor: colors.background, borderColor: showErrors && errors.pulse ? '#FCA5A5' : colors.border }
+                            ]}
+                            value={item.pulse}
+                            onChangeText={(val) => updateSet(item.id, 'pulse', val)}
+                            placeholder="---"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="numeric"
+                            maxLength={3}
+                          />
+                          {showErrors && errors.pulse ? (
+                            <ThemedText style={styles.fieldError}>{errors.pulse}</ThemedText>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </View>
                 </View>
               );
@@ -323,6 +368,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 15,
     marginBottom: 16,
+  },
+  fieldError: {
+    fontSize: 11,
+    color: '#DC2626',
+    fontWeight: '500',
+    marginBottom: 12,
+    marginTop: -8,
+    paddingHorizontal: 4,
   },
   addSetPill: {
     alignSelf: 'center',

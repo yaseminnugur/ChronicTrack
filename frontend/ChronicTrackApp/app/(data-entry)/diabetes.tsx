@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
 import { filterDecimalInput } from '../../utils/numberUtils';
+import { validateHbA1c, HEALTH_RANGES } from '../../validations/healthValidation';
 
 export default function DiabetesEntryScreen() {
   const colorScheme = useColorScheme();
@@ -20,8 +21,18 @@ export default function DiabetesEntryScreen() {
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [sugarLevel, setSugarLevel] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Gerçek zamanlı validasyon
+  const validation = useMemo(() => validateHbA1c(sugarLevel), [sugarLevel]);
 
   const handleSave = async () => {
+    setShowErrors(true);
+
+    if (!validation.isValid) {
+      return;
+    }
+
     try {
       if (sugarLevel || diabetesType) {
         setSaving(true);
@@ -125,7 +136,10 @@ export default function DiabetesEntryScreen() {
 
           <View style={styles.bigInputRow}>
             <TextInput
-              style={[styles.hugeInput, { color: colors.text, borderColor: colors.inputBackground }]}
+              style={[
+                styles.hugeInput,
+                { color: colors.text, borderColor: showErrors && validation.errors.hba1c ? '#FCA5A5' : colors.inputBackground }
+              ]}
               value={sugarLevel}
               onChangeText={handleDecimalInput}
               placeholder="0.0"
@@ -136,9 +150,13 @@ export default function DiabetesEntryScreen() {
             <ThemedText style={styles.unitText}>mg/dL</ThemedText>
           </View>
 
-          <ThemedText style={styles.bottomHint}>
-            Şeker ölçüm değerini giriniz
-          </ThemedText>
+          {showErrors && validation.errors.hba1c ? (
+            <ThemedText style={styles.fieldError}>{validation.errors.hba1c}</ThemedText>
+          ) : (
+            <ThemedText style={styles.bottomHint}>
+              Geçerli aralık: {HEALTH_RANGES.hba1c.min}–{HEALTH_RANGES.hba1c.max} {HEALTH_RANGES.hba1c.unit}
+            </ThemedText>
+          )}
         </View>
 
         <View style={{ flex: 1, minHeight: 40 }} />
@@ -289,6 +307,13 @@ const styles = StyleSheet.create({
   bottomHint: {
     fontSize: 11,
     color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  fieldError: {
+    fontSize: 11,
+    color: '#DC2626',
+    fontWeight: '500',
     textAlign: 'center',
     marginTop: 8,
   }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodPressure } from '../services/healthService';
 import { filterIntegerInput } from '../utils/numberUtils';
+import { validateBloodPressure, HEALTH_RANGES } from '../validations/healthValidation';
 
 export default function AddBloodPressureScreen() {
   const [sis, setSis] = useState('');
@@ -20,8 +21,18 @@ export default function AddBloodPressureScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [iosPickerStep, setIosPickerStep] = useState<'date' | 'time'>('date');
   const [saving, setSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Gerçek zamanlı validasyon
+  const validation = useMemo(() => validateBloodPressure(sis, dia, pulse), [sis, dia, pulse]);
 
   const handleSave = async () => {
+    setShowErrors(true);
+
+    if (!validation.isValid) {
+      return;
+    }
+
     try {
       if (sis && dia) {
         setSaving(true);
@@ -33,7 +44,9 @@ export default function AddBloodPressureScreen() {
         });
       }
       router.back();
-    } catch (e) {
+    } catch (e: any) {
+      const serverMsg = e?.response?.data?.error;
+      Alert.alert('Hata', serverMsg || 'Kayıt sırasında bir hata oluştu.');
       console.error(e);
     } finally {
       setSaving(false);
@@ -94,7 +107,7 @@ export default function AddBloodPressureScreen() {
 
         <View style={styles.formCard}>
           <ThemedText style={styles.label}>SİSTOLİK (BÜYÜK)</ThemedText>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, showErrors && validation.errors.systolic ? styles.inputWrapperError : null]}>
             <TextInput
               style={styles.input}
               value={sis}
@@ -102,12 +115,23 @@ export default function AddBloodPressureScreen() {
               placeholder="120"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
+              maxLength={3}
             />
             <ThemedText style={styles.unitText}>mmHg</ThemedText>
           </View>
+          {showErrors && validation.errors.systolic ? (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={14} color="#DC2626" />
+              <ThemedText style={styles.errorText}>{validation.errors.systolic}</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.rangeHint}>
+              Geçerli aralık: {HEALTH_RANGES.systolic.min}–{HEALTH_RANGES.systolic.max} {HEALTH_RANGES.systolic.unit}
+            </ThemedText>
+          )}
 
           <ThemedText style={styles.label}>DİASTOLİK (KÜÇÜK)</ThemedText>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, showErrors && validation.errors.diastolic ? styles.inputWrapperError : null]}>
             <TextInput
               style={styles.input}
               value={dia}
@@ -115,12 +139,23 @@ export default function AddBloodPressureScreen() {
               placeholder="80"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
+              maxLength={3}
             />
             <ThemedText style={styles.unitText}>mmHg</ThemedText>
           </View>
+          {showErrors && validation.errors.diastolic ? (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={14} color="#DC2626" />
+              <ThemedText style={styles.errorText}>{validation.errors.diastolic}</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.rangeHint}>
+              Geçerli aralık: {HEALTH_RANGES.diastolic.min}–{HEALTH_RANGES.diastolic.max} {HEALTH_RANGES.diastolic.unit}
+            </ThemedText>
+          )}
 
           <ThemedText style={styles.label}>NABIZ (KALP ATIŞ HIZI)</ThemedText>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, showErrors && validation.errors.pulse ? styles.inputWrapperError : null]}>
             <TextInput
               style={styles.input}
               value={pulse}
@@ -128,9 +163,20 @@ export default function AddBloodPressureScreen() {
               placeholder="72"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
+              maxLength={3}
             />
             <ThemedText style={styles.unitTextItalic}>BPM</ThemedText>
           </View>
+          {showErrors && validation.errors.pulse ? (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={14} color="#DC2626" />
+              <ThemedText style={styles.errorText}>{validation.errors.pulse}</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.rangeHint}>
+              Geçerli aralık: {HEALTH_RANGES.pulse.min}–{HEALTH_RANGES.pulse.max} {HEALTH_RANGES.pulse.unit}
+            </ThemedText>
+          )}
 
           <ThemedText style={styles.label}>ÖLÇÜM ZAMANI</ThemedText>
           <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7} onPress={openPicker}>
@@ -302,7 +348,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 4,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  inputWrapperError: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFF5F5',
   },
   input: {
     flex: 1,
@@ -320,6 +372,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
     color: '#9CA3AF',
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontWeight: '500',
+    flex: 1,
+  },
+  rangeHint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   dateTextPlaceholder: {
     flex: 1,

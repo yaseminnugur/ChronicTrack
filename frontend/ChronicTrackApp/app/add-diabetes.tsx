@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, ScrollView, TextInput, TouchableOpacity, Platform, Modal, Pressable, KeyboardAvoidingView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodSugar } from '../services/healthService';
 import { filterDecimalInput } from '../utils/numberUtils';
+import { validateBloodSugar, HEALTH_RANGES } from '../validations/healthValidation';
 
 const MEAL_OPTIONS = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık', 'Diğerleri'];
 
@@ -23,8 +24,18 @@ export default function AddDiabetesScreen() {
   const [mealState, setMealState] = useState(MEAL_OPTIONS[0]);
   const [showMealModal, setShowMealModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // Gerçek zamanlı validasyon
+  const validation = useMemo(() => validateBloodSugar(glucose), [glucose]);
 
   const handleSave = async () => {
+    setShowErrors(true);
+
+    if (!validation.isValid) {
+      return;
+    }
+
     try {
       if (glucose) {
         setSaving(true);
@@ -35,7 +46,9 @@ export default function AddDiabetesScreen() {
         });
       }
       router.back();
-    } catch (e) {
+    } catch (e: any) {
+      const serverMsg = e?.response?.data?.error;
+      Alert.alert('Hata', serverMsg || 'Kayıt sırasında bir hata oluştu.');
       console.error(e);
     } finally {
       setSaving(false);
@@ -108,7 +121,7 @@ export default function AddDiabetesScreen() {
 
         <View style={styles.formCard}>
           <ThemedText style={styles.label}>GLİKOZ DEĞERİ (MG/DL)</ThemedText>
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, showErrors && validation.errors.glucose ? styles.inputWrapperError : null]}>
             <TextInput
               style={styles.inputHuge}
               value={glucose}
@@ -121,6 +134,16 @@ export default function AddDiabetesScreen() {
               <ThemedText style={styles.unitBadgeText}>mg/dL</ThemedText>
             </View>
           </View>
+          {showErrors && validation.errors.glucose ? (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={14} color="#DC2626" />
+              <ThemedText style={styles.errorText}>{validation.errors.glucose}</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.rangeHint}>
+              Geçerli aralık: {HEALTH_RANGES.glucose.min}–{HEALTH_RANGES.glucose.max} {HEALTH_RANGES.glucose.unit}
+            </ThemedText>
+          )}
 
           <ThemedText style={styles.label}>ÖLÇÜM TARİHİ VE SAATİ</ThemedText>
           <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7} onPress={openPicker}>
@@ -353,7 +376,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 4,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  inputWrapperError: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFF5F5',
   },
   inputHuge: {
     flex: 1,
@@ -372,6 +401,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 13,
     fontWeight: '600',
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontWeight: '500',
+    flex: 1,
+  },
+  rangeHint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   dateTextPlaceholder: {
     flex: 1,
