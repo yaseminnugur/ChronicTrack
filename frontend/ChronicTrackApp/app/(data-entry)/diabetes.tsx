@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
+import { filterDecimalInput } from '../../utils/numberUtils';
 
 export default function DiabetesEntryScreen() {
   const colorScheme = useColorScheme();
@@ -42,9 +43,8 @@ export default function DiabetesEntryScreen() {
   };
 
   const handleDecimalInput = (text: string) => {
-    // Sadece rakam ve noktaya (ondalık) izin ver
-    const numericValue = text.replace(/[^0-9.]/g, '');
-    setSugarLevel(numericValue);
+    // Rakam, nokta ve virgüle izin ver (Türkçe ondalık desteği)
+    setSugarLevel(filterDecimalInput(text));
   };
 
   return (

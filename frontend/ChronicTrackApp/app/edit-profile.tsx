@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { getUserProfile, updateUserProfile } from '../services/userService';
+import { filterDecimalInput, filterIntegerInput, safeParseInt } from '../utils/numberUtils';
 
 export default function EditProfileScreen() {
   const [weight, setWeight] = useState('');
@@ -58,7 +59,8 @@ export default function EditProfileScreen() {
 
   const updateBPField = (index: number, field: 'sis' | 'dia' | 'pulse', value: string) => {
     const updated = [...bloodPressureData];
-    updated[index] = { ...updated[index], [field]: value ? Number(value) : 0 };
+    const filtered = filterIntegerInput(value);
+    updated[index] = { ...updated[index], [field]: filtered ? safeParseInt(filtered) : 0 };
     setBloodPressureData(updated);
   };
 
@@ -139,7 +141,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <ThemedText style={styles.inputLabel}>Kilo (kg)</ThemedText>
               <View style={styles.inputWrapper}>
-                <TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="numeric" />
+                <TextInput style={styles.input} value={weight} onChangeText={(text) => setWeight(filterDecimalInput(text))} keyboardType="decimal-pad" />
                 <MaterialCommunityIcons name="weight" size={20} color="#475569" />
               </View>
             </View>
@@ -147,7 +149,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <ThemedText style={styles.inputLabel}>Boy (cm)</ThemedText>
               <View style={styles.inputWrapper}>
-                <TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="numeric" />
+                <TextInput style={styles.input} value={height} onChangeText={(text) => setHeight(filterIntegerInput(text))} keyboardType="numeric" />
                 <MaterialCommunityIcons name="ruler" size={20} color="#475569" />
               </View>
             </View>
@@ -155,7 +157,7 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <ThemedText style={styles.inputLabel}>Yaş</ThemedText>
               <View style={styles.inputWrapper}>
-                <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+                <TextInput style={styles.input} value={age} onChangeText={(text) => setAge(filterIntegerInput(text))} keyboardType="numeric" />
                 <Ionicons name="calendar-outline" size={20} color="#475569" />
               </View>
             </View>
@@ -271,7 +273,7 @@ export default function EditProfileScreen() {
                     <TextInput
                       style={styles.input}
                       value={hba1c}
-                      onChangeText={(text) => setHba1c(text.replace(/[^0-9.]/g, ''))}
+                      onChangeText={(text) => setHba1c(filterDecimalInput(text))}
                       keyboardType="decimal-pad"
                       placeholder="0.0"
                       placeholderTextColor="#94A3B8"
@@ -294,7 +296,7 @@ export default function EditProfileScreen() {
                           <TextInput
                             style={styles.bpInput}
                             value={bp.sis?.toString() || ''}
-                            onChangeText={(text) => updateBPField(idx, 'sis', text.replace(/[^0-9]/g, ''))}
+                            onChangeText={(text) => updateBPField(idx, 'sis', text)}
                             keyboardType="numeric"
                             placeholder="Sis"
                             placeholderTextColor="#94A3B8"
@@ -304,7 +306,7 @@ export default function EditProfileScreen() {
                           <TextInput
                             style={styles.bpInput}
                             value={bp.dia?.toString() || ''}
-                            onChangeText={(text) => updateBPField(idx, 'dia', text.replace(/[^0-9]/g, ''))}
+                            onChangeText={(text) => updateBPField(idx, 'dia', text)}
                             keyboardType="numeric"
                             placeholder="Dia"
                             placeholderTextColor="#94A3B8"
@@ -317,7 +319,7 @@ export default function EditProfileScreen() {
                           <TextInput
                             style={styles.bpPulseInput}
                             value={bp.pulse?.toString() || ''}
-                            onChangeText={(text) => updateBPField(idx, 'pulse', text.replace(/[^0-9]/g, ''))}
+                            onChangeText={(text) => updateBPField(idx, 'pulse', text)}
                             keyboardType="numeric"
                             placeholder="Nabız"
                             placeholderTextColor="#94A3B8"

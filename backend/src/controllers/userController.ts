@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
+import { safeParseFloat, safeParseInt } from '../utils/numberUtils.ts';
 
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -56,9 +57,9 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
       where: { id: userId },
       data: {
         ...(name !== undefined && { name }),
-        ...(weight !== undefined && { weight: weight ? parseFloat(weight) : null }),
-        ...(height !== undefined && { height: height ? parseFloat(height) : null }),
-        ...(age !== undefined && { age: age ? parseInt(age) : null }),
+        ...(weight !== undefined && { weight: weight ? safeParseFloat(weight) : null }),
+        ...(height !== undefined && { height: height ? safeParseFloat(height) : null }),
+        ...(age !== undefined && { age: age ? safeParseInt(age) : null }),
         ...(isSmoking !== undefined && { isSmoking }),
         ...(activityLevel !== undefined && { activityLevel }),
         ...(saltLevel !== undefined && { saltLevel }),
@@ -94,13 +95,13 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
         where: { userId },
         update: {
           ...(diabetesType !== undefined && { diabetesType: diabetesType || null }),
-          ...(hba1c !== undefined && { hba1c: hba1c ? Number(hba1c) : null }),
+          ...(hba1c !== undefined && { hba1c: hba1c ? safeParseFloat(hba1c) : null }),
           ...(bloodPressureData !== undefined && { bloodPressureData }),
         },
         create: {
           userId,
           diabetesType: diabetesType || null,
-          hba1c: hba1c ? Number(hba1c) : null,
+          hba1c: hba1c ? safeParseFloat(hba1c) : null,
           bloodPressureData: bloodPressureData || null,
         },
       });

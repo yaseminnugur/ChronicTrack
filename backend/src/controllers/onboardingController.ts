@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
+import { safeParseFloat, safeParseInt } from '../utils/numberUtils.ts';
 
 export const saveProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -15,9 +16,9 @@ export const saveProfile = async (req: Request, res: Response): Promise<void> =>
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        weight: weight ? parseFloat(weight) : null,
-        height: height ? parseFloat(height) : null,
-        age: age ? parseInt(age) : null,
+        weight: weight ? safeParseFloat(weight) : null,
+        height: height ? safeParseFloat(height) : null,
+        age: age ? safeParseInt(age) : null,
         isSmoking: isSmoking ?? false,
         activityLevel: activityLevel || null,
         saltLevel: saltLevel || null,
@@ -101,13 +102,13 @@ export const saveOnboardingData = async (req: Request, res: Response): Promise<v
       where: { userId },
       update: {
         ...(diabetesType !== undefined && { diabetesType }),
-        ...(hba1c !== undefined && { hba1c: hba1c ? Number(hba1c) : null }),
+        ...(hba1c !== undefined && { hba1c: hba1c ? safeParseFloat(hba1c) : null }),
         ...(bloodPressureData !== undefined && { bloodPressureData }),
       },
       create: {
         userId,
         diabetesType: diabetesType || null,
-        hba1c: hba1c ? Number(hba1c) : null,
+        hba1c: hba1c ? safeParseFloat(hba1c) : null,
         bloodPressureData: bloodPressureData || null,
       },
     });

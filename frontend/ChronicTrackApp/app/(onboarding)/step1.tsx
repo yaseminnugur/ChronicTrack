@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import { saveStep1Profile } from '../../services/onboardingService';
+import { filterDecimalInput, filterIntegerInput } from '../../utils/numberUtils';
 
 export default function Step1Screen() {
   const colorScheme = useColorScheme();
@@ -19,9 +20,12 @@ export default function Step1Screen() {
   const [height, setHeight] = useState('');
   const [age, setAge] = useState('');
 
-  const handleNumberInput = (text: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
-    const numericValue = text.replace(/[^0-9]/g, '');
-    setter(numericValue);
+  const handleWeightInput = (text: string) => {
+    setWeight(filterDecimalInput(text));
+  };
+
+  const handleIntegerInput = (text: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
+    setter(filterIntegerInput(text));
   };
 
   const [smoker, setSmoker] = useState(false);
@@ -75,11 +79,11 @@ export default function Step1Screen() {
               <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={weight}
-                onChangeText={(text) => handleNumberInput(text, setWeight)}
+                onChangeText={handleWeightInput}
                 placeholder="70"
                 placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                maxLength={3}
+                keyboardType="decimal-pad"
+                maxLength={5}
               />
             </View>
           </View>
@@ -90,7 +94,7 @@ export default function Step1Screen() {
               <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={height}
-                onChangeText={(text) => handleNumberInput(text, setHeight)}
+                onChangeText={(text) => handleIntegerInput(text, setHeight)}
                 placeholder="175"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"
@@ -105,7 +109,7 @@ export default function Step1Screen() {
               <TextInput
                 style={[styles.inputField, { color: colors.text }]}
                 value={age}
-                onChangeText={(text) => handleNumberInput(text, setAge)}
+                onChangeText={(text) => handleIntegerInput(text, setAge)}
                 placeholder="45"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="numeric"

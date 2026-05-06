@@ -7,6 +7,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodPressure } from '../services/healthService';
+import { filterIntegerInput } from '../utils/numberUtils';
 
 export default function AddBloodPressureScreen() {
   const [sis, setSis] = useState('');
@@ -97,7 +98,7 @@ export default function AddBloodPressureScreen() {
             <TextInput
               style={styles.input}
               value={sis}
-              onChangeText={setSis}
+              onChangeText={(text) => setSis(filterIntegerInput(text))}
               placeholder="120"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
@@ -110,7 +111,7 @@ export default function AddBloodPressureScreen() {
             <TextInput
               style={styles.input}
               value={dia}
-              onChangeText={setDia}
+              onChangeText={(text) => setDia(filterIntegerInput(text))}
               placeholder="80"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"
@@ -123,7 +124,7 @@ export default function AddBloodPressureScreen() {
             <TextInput
               style={styles.input}
               value={pulse}
-              onChangeText={setPulse}
+              onChangeText={(text) => setPulse(filterIntegerInput(text))}
               placeholder="72"
               placeholderTextColor="#9CA3AF"
               keyboardType="numeric"

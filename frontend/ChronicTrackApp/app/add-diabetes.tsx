@@ -7,6 +7,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodSugar } from '../services/healthService';
+import { filterDecimalInput } from '../utils/numberUtils';
 
 const MEAL_OPTIONS = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık', 'Diğerleri'];
 
@@ -111,10 +112,10 @@ export default function AddDiabetesScreen() {
             <TextInput
               style={styles.inputHuge}
               value={glucose}
-              onChangeText={setGlucose}
+              onChangeText={(text) => setGlucose(filterDecimalInput(text))}
               placeholder="---"
               placeholderTextColor="#9CA3AF"
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
             />
             <View style={styles.unitBadge}>
               <ThemedText style={styles.unitBadgeText}>mg/dL</ThemedText>

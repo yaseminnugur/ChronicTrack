@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../db.ts';
+import { safeParseFloat, safeParseInt, isValidNumber } from '../utils/numberUtils.ts';
 
 export const addBloodSugar = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -10,7 +11,7 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
     }
     const { glucose, mealState, notes } = req.body;
 
-    if (!glucose || isNaN(glucose)) {
+    if (!glucose || !isValidNumber(glucose)) {
       res.status(400).json({ error: 'Geçerli bir glikoz değeri girin.' });
       return;
     }
@@ -18,7 +19,7 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
     const record = await prisma.bloodSugar.create({
       data: {
         userId,
-        glucose: parseFloat(glucose),
+        glucose: safeParseFloat(glucose),
         mealState: mealState || 'Belirtilmedi',
         notes: notes || '',
       }
@@ -50,9 +51,9 @@ export const addBloodPressure = async (req: Request, res: Response): Promise<voi
     const record = await prisma.bloodPressure.create({
       data: {
         userId,
-        systolic: parseInt(systolic),
-        diastolic: parseInt(diastolic),
-        pulse: pulse ? parseInt(pulse) : 0,
+        systolic: safeParseInt(systolic),
+        diastolic: safeParseInt(diastolic),
+        pulse: pulse ? safeParseInt(pulse) : 0,
         notes: notes || '',
       }
     });

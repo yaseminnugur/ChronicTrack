@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
+import { filterIntegerInput } from '../../utils/numberUtils';
 
 export default function BloodPressureEntryScreen() {
   const colorScheme = useColorScheme();
@@ -47,7 +48,7 @@ export default function BloodPressureEntryScreen() {
   };
 
   const updateSet = (id: number, field: 'sis' | 'dia' | 'pulse', value: string) => {
-    const numericValue = value.replace(/[^0-9]/g, '');
+    const numericValue = filterIntegerInput(value);
     setSets(sets.map(s => s.id === id ? { ...s, [field]: numericValue } : s));
   };
 
