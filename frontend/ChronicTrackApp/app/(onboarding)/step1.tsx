@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Switch, TextInput } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Switch, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
@@ -59,6 +59,7 @@ export default function Step1Screen() {
         </ThemedText>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.pageHeader}>
           <ThemedText type="title" style={styles.pageTitle}>Kişisel Sağlık Profili</ThemedText>
@@ -228,6 +229,7 @@ export default function Step1Screen() {
         />
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
