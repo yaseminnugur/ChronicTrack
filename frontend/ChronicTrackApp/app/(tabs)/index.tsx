@@ -44,10 +44,11 @@ export default function HomeScreen() {
             const condString = profileRes.user.chronicConditions || 'Hiçbiri';
             const condArr = condString.split(',').map((c: string) => c.trim());
             setConditions(condArr);
-            setHasData(condString !== 'Hiçbiri' && condString !== '');
+            // Tüm kullanıcılar hem kan şekeri hem tansiyon ölçümü ekleyebilmeli
+            setHasData(true);
 
-            if (condArr.includes('Diyabet') && !condArr.includes('Tansiyon')) setActiveTab('Kan Şekeri');
-            else if (condArr.includes('Tansiyon') && !condArr.includes('Diyabet')) setActiveTab('Tansiyon');
+            // Varsayılan tab: Kan Şekeri
+            setActiveTab('Kan Şekeri');
           }
 
           if (dashboardRes) {
@@ -144,51 +145,30 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* METRICS CARDS */}
-        {hasData ? (
-          // FILLED STATE CARDS
-          <View style={styles.rowCards}>
-            {conditions.includes('Diyabet') && (
-              <View style={[styles.filledCard, { marginRight: conditions.includes('Tansiyon') ? 8 : 0 }]}>
-                <View style={styles.iconRedCircle}>
-                  <Ionicons name="water-outline" size={18} color="#E11D48" />
-                </View>
-                <ThemedText style={styles.cardLabel}>Son Kan{'\n'}Şekeri</ThemedText>
-                <View style={styles.valueRow}>
-                  <ThemedText style={styles.cardValue}>{latestSugar !== null ? latestSugar : '--'}</ThemedText>
-                </View>
-                {latestSugar !== null && <ThemedText style={styles.cardUnit}>mg/dL</ThemedText>}
-              </View>
-            )}
-
-            {conditions.includes('Tansiyon') && (
-              <View style={[styles.filledCard, { marginLeft: conditions.includes('Diyabet') ? 8 : 0 }]}>
-                <View style={styles.iconBlueCircle}>
-                  <FontAwesome5 name="wave-square" size={14} color="#0EA5E9" />
-                </View>
-                <ThemedText style={styles.cardLabel}>Son Tansiyon</ThemedText>
-                <View style={styles.valueRow}>
-                  <ThemedText style={styles.cardValue}>{latestBP ? `${latestBP.sys}/${latestBP.dia}` : '--/--'}</ThemedText>
-                </View>
-                {latestBP && <ThemedText style={styles.cardUnit}>mmHg</ThemedText>}
-              </View>
-            )}
-          </View>
-        ) : (
-          // EMPTY STATE CARDS
-          <View style={styles.colCards}>
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyCardHeader}>
-                <View style={styles.iconBlueCircleOutline}>
-                  <Ionicons name="water-outline" size={16} color="#0EA5E9" />
-                </View>
-                <ThemedText style={styles.emptyCardBadgeText}>GENEL SAĞLIK</ThemedText>
-              </View>
-              <ThemedText style={styles.emptyCardLabel}>Profilizini Düzenleyin</ThemedText>
-              <ThemedText style={styles.emptyCardPlaceholder}>Onboarding tamamlandı, kronik rahatsızlık bildirmediniz. İhtiyaç durumunda profilinizi güncelleyebilirsiniz.</ThemedText>
+        {/* METRICS CARDS - Tüm kullanıcılar için her iki kart da görünür */}
+        <View style={styles.rowCards}>
+          <View style={[styles.filledCard, { marginRight: 8 }]}>
+            <View style={styles.iconRedCircle}>
+              <Ionicons name="water-outline" size={18} color="#E11D48" />
             </View>
+            <ThemedText style={styles.cardLabel}>Son Kan{'\n'}Şekeri</ThemedText>
+            <View style={styles.valueRow}>
+              <ThemedText style={styles.cardValue}>{latestSugar !== null ? latestSugar : '--'}</ThemedText>
+            </View>
+            {latestSugar !== null && <ThemedText style={styles.cardUnit}>mg/dL</ThemedText>}
           </View>
-        )}
+
+          <View style={[styles.filledCard, { marginLeft: 8 }]}>
+            <View style={styles.iconBlueCircle}>
+              <FontAwesome5 name="wave-square" size={14} color="#0EA5E9" />
+            </View>
+            <ThemedText style={styles.cardLabel}>Son Tansiyon</ThemedText>
+            <View style={styles.valueRow}>
+              <ThemedText style={styles.cardValue}>{latestBP ? `${latestBP.sys}/${latestBP.dia}` : '--/--'}</ThemedText>
+            </View>
+            {latestBP && <ThemedText style={styles.cardUnit}>mmHg</ThemedText>}
+          </View>
+        </View>
 
         {/* ANALYSIS SECTION */}
         <View style={styles.analysisSection}>
@@ -206,7 +186,8 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {hasData && conditions.includes('Diyabet') && conditions.includes('Tansiyon') && (
+          {/* Segment tab her zaman gösterilir */}
+          {(
             <View style={styles.segmentContainer}>
               <TouchableOpacity
                 style={[styles.segmentBtn, activeTab === 'Kan Şekeri' && styles.segmentBtnActive]}
@@ -283,24 +264,21 @@ export default function HomeScreen() {
         <View style={{ flex: 1, minHeight: 40 }} />
 
         {/* BOTTOM BUTTONS */}
-        {conditions.includes('Diyabet') && (
-          <CustomButton
-            title="Kan Şekeri Ekle"
-            onPress={handleAddBloodSugar}
-            style={{ marginBottom: 12 }}
-            leftIcon={<Ionicons name="add" size={20} color="#FFF" style={{ marginRight: 6 }} />}
-          />
-        )}
+        {/* Butonlar tüm kullanıcılar için her zaman görünür */}
+        <CustomButton
+          title="Kan Şekeri Ekle"
+          onPress={handleAddBloodSugar}
+          style={{ marginBottom: 12 }}
+          leftIcon={<Ionicons name="add" size={20} color="#FFF" style={{ marginRight: 6 }} />}
+        />
 
-        {conditions.includes('Tansiyon') && (
-          <CustomButton
-            title="Tansiyon Ekle"
-            onPress={handleAddBloodPressure}
-            style={{ backgroundColor: conditions.includes('Diyabet') ? '#E2E8F0' : '#0EA5E9', borderColor: 'transparent' }}
-            textStyle={{ color: conditions.includes('Diyabet') ? '#0F172A' : '#FFF' }}
-            leftIcon={<Ionicons name="add" size={20} color={conditions.includes('Diyabet') ? '#0F172A' : '#FFF'} style={{ marginRight: 6 }} />}
-          />
-        )}
+        <CustomButton
+          title="Tansiyon Ekle"
+          onPress={handleAddBloodPressure}
+          style={{ backgroundColor: '#E2E8F0', borderColor: 'transparent' }}
+          textStyle={{ color: '#0F172A' }}
+          leftIcon={<Ionicons name="add" size={20} color="#0F172A" style={{ marginRight: 6 }} />}
+        />
 
       </ScrollView>
 
