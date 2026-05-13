@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
+import { getBloodSugarStatus, getHbA1cStatus } from '../../utils/healthStatusUtils';
 import { getBloodSugars } from '../../services/healthService';
 import { getUserProfile } from '../../services/userService';
 
@@ -75,6 +76,8 @@ export default function DiabetesListScreen() {
       else if (item.mealState === 'Uyku Öncesi') { icon = 'moon'; iconFam = 'Ionicons'; }
       else if (item.mealState === 'Açlık') { icon = 'food-off'; iconFam = 'MaterialCommunityIcons'; }
       
+      const glucoseStatus = getBloodSugarStatus(glucoseVal);
+      
       groups[dateGroup].push({
         id: item.id,
         title: item.mealState || 'Ölçüm',
@@ -83,7 +86,8 @@ export default function DiabetesListScreen() {
         unit: 'MG/DL',
         type: type,
         icon: icon,
-        iconFam: iconFam
+        iconFam: iconFam,
+        status: glucoseStatus,
       });
     });
 
@@ -153,9 +157,21 @@ export default function DiabetesListScreen() {
               </View>
 
               <View style={styles.summaryFooter}>
-                <View style={styles.pillNormal}>
-                  <ThemedText style={styles.pillNormalText}>Bugün {averageToday ? 'Kayıt Var' : 'Kayıt Yok'}</ThemedText>
-                </View>
+                {averageToday !== null ? (
+                  (() => {
+                    const avgStatus = getBloodSugarStatus(averageToday);
+                    return (
+                      <View style={[styles.pillStatus, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                        <Ionicons name={avgStatus.icon as any} size={12} color="#FFF" />
+                        <ThemedText style={styles.pillNormalText}>{avgStatus.label}</ThemedText>
+                      </View>
+                    );
+                  })()
+                ) : (
+                  <View style={styles.pillNormal}>
+                    <ThemedText style={styles.pillNormalText}>Bugün Kayıt Yok</ThemedText>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -164,9 +180,14 @@ export default function DiabetesListScreen() {
               <View style={styles.hba1cCard}>
                  <View style={styles.hba1cHeader}>
                     <ThemedText style={styles.hba1cLabel}>3 Aylık Şeker (HbA1c)</ThemedText>
-                    <View style={styles.hba1cBadge}>
-                      <ThemedText style={styles.hba1cBadgeText}>İlk Kayıt Verisi</ThemedText>
-                    </View>
+                    {(() => {
+                      const hba1cStatus = getHbA1cStatus(Number(onboardingData.hba1c));
+                      return (
+                        <View style={[styles.hba1cBadge, { backgroundColor: hba1cStatus.bgColor }]}>
+                          <ThemedText style={[styles.hba1cBadgeText, { color: hba1cStatus.color }]}>{hba1cStatus.label}</ThemedText>
+                        </View>
+                      );
+                    })()}
                  </View>
                  <View style={styles.hba1cValueRow}>
                     <ThemedText style={styles.hba1cValue}>{onboardingData.hba1c}</ThemedText>
@@ -192,21 +213,27 @@ export default function DiabetesListScreen() {
                     return (
                       <View key={item.id} style={styles.listItem}>
                         <View style={styles.itemLeft}>
-                          <View style={styles.iconCircle}>
+                          <View style={[styles.iconCircle, { borderWidth: 1.5, borderColor: item.status.bgColor }]}>
                             {item.iconFam === 'Ionicons' ? (
-                              <Ionicons name={item.icon as any} size={20} color={valColor} />
+                              <Ionicons name={item.icon as any} size={20} color={item.status.color} />
                             ) : (
-                              <MaterialCommunityIcons name={item.icon as any} size={20} color={valColor} />
+                              <MaterialCommunityIcons name={item.icon as any} size={20} color={item.status.color} />
                             )}
                           </View>
                           <View>
                             <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
-                            <ThemedText style={styles.itemTime}>{item.time}</ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                              <View style={[styles.statusDot, { backgroundColor: item.status.color }]} />
+                              <ThemedText style={styles.itemTime}>{item.time}  •  {item.status.label}</ThemedText>
+                            </View>
                           </View>
                         </View>
 
                         <View style={styles.itemRight}>
-                          <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name={item.status.icon as any} size={16} color={item.status.color} style={{ marginRight: 4 }} />
+                            <ThemedText style={[styles.itemValue, { color: item.status.color }]}>{item.value}</ThemedText>
+                          </View>
                           <ThemedText style={styles.itemUnit}>{item.unit}</ThemedText>
                         </View>
                       </View>
@@ -490,5 +517,19 @@ const styles = StyleSheet.create({
   hba1cTypeValue: {
     fontWeight: '700',
     color: '#1E293B',
-  }
+  },
+  pillStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
 });

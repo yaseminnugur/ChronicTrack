@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { router, useFocusEffect } from 'expo-router';
 import { getUserProfile } from '../../services/userService';
 import { getDashboardData } from '../../services/healthService';
+import { getBloodSugarStatus, getBloodPressureStatus } from '../../utils/healthStatusUtils';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
@@ -155,7 +156,20 @@ export default function HomeScreen() {
             <View style={styles.valueRow}>
               <ThemedText style={styles.cardValue}>{latestSugar !== null ? latestSugar : '--'}</ThemedText>
             </View>
-            {latestSugar !== null && <ThemedText style={styles.cardUnit}>mg/dL</ThemedText>}
+            {latestSugar !== null && (
+              <View style={{ marginTop: 6 }}>
+                <ThemedText style={styles.cardUnit}>mg/dL</ThemedText>
+                {(() => {
+                  const status = getBloodSugarStatus(latestSugar);
+                  return (
+                    <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}>
+                      <Ionicons name={status.icon as any} size={12} color={status.color} />
+                      <ThemedText style={[styles.statusBadgeText, { color: status.color }]}>{status.label}</ThemedText>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
           </View>
 
           <View style={[styles.filledCard, { marginLeft: 8 }]}>
@@ -166,7 +180,20 @@ export default function HomeScreen() {
             <View style={styles.valueRow}>
               <ThemedText style={styles.cardValue}>{latestBP ? `${latestBP.sys}/${latestBP.dia}` : '--/--'}</ThemedText>
             </View>
-            {latestBP && <ThemedText style={styles.cardUnit}>mmHg</ThemedText>}
+            {latestBP && (
+              <View style={{ marginTop: 6 }}>
+                <ThemedText style={styles.cardUnit}>mmHg</ThemedText>
+                {(() => {
+                  const status = getBloodPressureStatus(latestBP.sys, latestBP.dia);
+                  return (
+                    <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}>
+                      <Ionicons name={status.icon as any} size={12} color={status.color} />
+                      <ThemedText style={[styles.statusBadgeText, { color: status.color }]}>{status.label}</ThemedText>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
           </View>
         </View>
 
@@ -406,7 +433,7 @@ const styles = StyleSheet.create({
   },
   cardUnit: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#94A3B8',
     fontWeight: '600',
     marginTop: 2,
   },
@@ -681,5 +708,21 @@ const styles = StyleSheet.create({
   modalOptionActive: {
     color: '#0EA5E9',
     fontWeight: '600',
-  }
+  },
+
+  // Status Badge
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 6,
+    gap: 3,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
 });

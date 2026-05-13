@@ -5,6 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
+import { getBloodPressureStatus } from '../../utils/healthStatusUtils';
 import { getBloodPressures } from '../../services/healthService';
 import { getUserProfile } from '../../services/userService';
 
@@ -81,18 +82,17 @@ export default function BloodPressureListScreen() {
 
       const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       let type = 'normal';
-      let detail = 'Normal';
-      if (sys >= 140 || dia >= 90) { type = 'danger'; detail = 'Yüksek'; }
-      else if (sys > 120 || dia > 80) { type = 'high'; detail = 'Hafif Yüksek'; }
+      const bpStatus = getBloodPressureStatus(sys, dia);
 
       groups[dateGroup].push({
         id: item.id,
         title: item.notes || 'Ölçüm',
         time: timeStr,
         value: `${item.systolic}/${item.diastolic}`,
-        detail: detail,
+        detail: bpStatus.label,
         type: type,
-        icon: 'heart'
+        icon: 'heart',
+        status: bpStatus,
       });
     });
 
@@ -162,9 +162,21 @@ export default function BloodPressureListScreen() {
               </View>
 
               <View style={styles.summaryFooter}>
-                <View style={styles.pillNormal}>
-                  <ThemedText style={styles.pillNormalText}>Bugün {avgSys !== null ? 'Kayıt Var' : 'Kayıt Yok'}</ThemedText>
-                </View>
+                {avgSys !== null && avgDia !== null ? (
+                  (() => {
+                    const avgStatus = getBloodPressureStatus(avgSys, avgDia);
+                    return (
+                      <View style={[styles.pillStatus, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                        <Ionicons name={avgStatus.icon as any} size={12} color="#FFF" />
+                        <ThemedText style={styles.pillNormalText}>{avgStatus.label}</ThemedText>
+                      </View>
+                    );
+                  })()
+                ) : (
+                  <View style={styles.pillNormal}>
+                    <ThemedText style={styles.pillNormalText}>Bugün Kayıt Yok</ThemedText>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -174,26 +186,26 @@ export default function BloodPressureListScreen() {
                   <ThemedText style={styles.groupTitle}>{group.dateGroup}</ThemedText>
 
                   {group.items.map((item: any) => {
-                    const valColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#0F172A';
-                    const dotColor = item.type === 'danger' ? '#DC2626' : item.type === 'high' ? '#EA580C' : '#10B981';
-
                     return (
                       <View key={item.id} style={styles.listItem}>
                         <View style={styles.itemLeft}>
-                          <View style={styles.iconCircle}>
-                            <FontAwesome5 name={item.icon as any} size={16} color="#475569" />
+                          <View style={[styles.iconCircle, { borderWidth: 1.5, borderColor: item.status.bgColor }]}>
+                            <FontAwesome5 name={item.icon as any} size={16} color={item.status.color} />
                           </View>
                           <View>
                             <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                              <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
-                              <ThemedText style={styles.itemTime}>{item.time}  •  {item.detail}</ThemedText>
+                              <View style={[styles.statusDot, { backgroundColor: item.status.color }]} />
+                              <ThemedText style={styles.itemTime}>{item.time}  •  {item.status.label}</ThemedText>
                             </View>
                           </View>
                         </View>
 
                         <View style={styles.itemRight}>
-                          <ThemedText style={[styles.itemValue, { color: valColor }]}>{item.value}</ThemedText>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Ionicons name={item.status.icon as any} size={16} color={item.status.color} style={{ marginRight: 4 }} />
+                            <ThemedText style={[styles.itemValue, { color: item.status.color }]}>{item.value}</ThemedText>
+                          </View>
                           <ThemedText style={styles.itemUnit}>mmHg</ThemedText>
                         </View>
                       </View>
@@ -415,5 +427,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#64748B',
     marginTop: 2,
-  }
+  },
+  pillStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
 });
