@@ -144,8 +144,24 @@ export const getBloodSugars = async (req: Request, res: Response): Promise<void>
       res.status(401).json({ error: 'Yetki reddedildi' });
       return;
     }
+
+    // Tarih filtreleme desteği — frontend, kullanıcının yerel TZ'sinde
+    // gün başı/sonu olacak şekilde ISO timestamp gönderir.
+    const { startDate, endDate } = req.query;
+    const whereClause: any = { userId };
+
+    if (startDate || endDate) {
+      whereClause.measuredAt = {};
+      if (startDate) {
+        whereClause.measuredAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        whereClause.measuredAt.lte = new Date(endDate as string);
+      }
+    }
+
     const records = await prisma.bloodSugar.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { measuredAt: 'desc' }
     });
     res.status(200).json(records);
@@ -162,8 +178,24 @@ export const getBloodPressures = async (req: Request, res: Response): Promise<vo
       res.status(401).json({ error: 'Yetki reddedildi' });
       return;
     }
+
+    // Tarih filtreleme desteği — frontend, kullanıcının yerel TZ'sinde
+    // gün başı/sonu olacak şekilde ISO timestamp gönderir.
+    const { startDate, endDate } = req.query;
+    const whereClause: any = { userId };
+
+    if (startDate || endDate) {
+      whereClause.measuredAt = {};
+      if (startDate) {
+        whereClause.measuredAt.gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        whereClause.measuredAt.lte = new Date(endDate as string);
+      }
+    }
+
     const records = await prisma.bloodPressure.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { measuredAt: 'desc' }
     });
     res.status(200).json(records);

@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
-import { getBloodSugarStatus, getHbA1cStatus } from '../../utils/healthStatusUtils';
+import { getHbA1cStatus, getBloodSugarStatus } from '../../utils/healthStatusUtils';
 import { getBloodSugars } from '../../services/healthService';
 import { getUserProfile } from '../../services/userService';
+import DateRangePicker from '@/components/DateRangePicker';
 
 export default function DiabetesListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
   const [records, setRecords] = useState<any[]>([]);
   const [onboardingData, setOnboardingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<{ startDate?: string, endDate?: string }>({});
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchRecords = async () => {
         try {
           const [data, profile] = await Promise.all([
-            getBloodSugars(),
+            getBloodSugars(dateRange),
             getUserProfile()
           ]);
           setRecords(data || []);
@@ -34,7 +36,7 @@ export default function DiabetesListScreen() {
         }
       };
       fetchRecords();
-    }, [])
+    }, [dateRange])
   );
 
   const groupData = () => {
@@ -145,6 +147,21 @@ export default function DiabetesListScreen() {
             </ThemedText>
           </TouchableOpacity>
         </View>
+
+        {/* Tarih Filtresi */}
+        {activeTab === 'Liste' && (
+          <View style={{ paddingHorizontal: 4 }}>
+            <DateRangePicker
+              themeColor="#0EA5E9"
+              onApply={(startDate, endDate) => {
+                setDateRange({
+                  startDate: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : undefined,
+                  endDate: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : undefined
+                });
+              }}
+            />
+          </View>
+        )}
 
         {activeTab === 'Liste' ? (
           <View>
@@ -531,5 +548,23 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     marginRight: 6,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    marginRight: 8,
+  },
+  filterPillActive: {
+    backgroundColor: '#0EA5E9',
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  filterPillTextActive: {
+    color: '#FFF',
   },
 });

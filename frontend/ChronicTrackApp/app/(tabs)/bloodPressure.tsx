@@ -8,33 +8,41 @@ import AnalysisView from '@/components/AnalysisView';
 import { getBloodPressureStatus } from '../../utils/healthStatusUtils';
 import { getBloodPressures } from '../../services/healthService';
 import { getUserProfile } from '../../services/userService';
+import DateRangePicker from '@/components/DateRangePicker';
 
 export default function BloodPressureListScreen() {
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<{ startDate?: string, endDate?: string }>({});
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchRecords = async () => {
         try {
           const [data, profile] = await Promise.all([
-            getBloodPressures(),
+            getBloodPressures(dateRange),
             getUserProfile()
           ]);
 
           let allRecords = data || [];
 
           if (profile?.user?.onboardingData?.bloodPressureData) {
-            const onboardingRecords = profile.user.onboardingData.bloodPressureData.map((bp: any, idx: number) => ({
-              id: `onboarding-${idx}`,
-              systolic: bp.sis,
-              diastolic: bp.dia,
-              pulse: bp.pulse,
-              measuredAt: profile.user.onboardingData.createdAt || profile.user.createdAt,
-              notes: `İlk Kayıt (Set ${idx + 1})`
-            }));
-            allRecords = [...allRecords, ...onboardingRecords];
+            const onboardingTs = new Date(profile.user.onboardingData.createdAt || profile.user.createdAt).getTime();
+            const startTs = dateRange.startDate ? new Date(dateRange.startDate).getTime() : -Infinity;
+            const endTs = dateRange.endDate ? new Date(dateRange.endDate).getTime() : Infinity;
+
+            if (onboardingTs >= startTs && onboardingTs <= endTs) {
+              const onboardingRecords = profile.user.onboardingData.bloodPressureData.map((bp: any, idx: number) => ({
+                id: `onboarding-${idx}`,
+                systolic: bp.sis,
+                diastolic: bp.dia,
+                pulse: bp.pulse,
+                measuredAt: profile.user.onboardingData.createdAt || profile.user.createdAt,
+                notes: `İlk Kayıt (Set ${idx + 1})`
+              }));
+              allRecords = [...allRecords, ...onboardingRecords];
+            }
           }
 
           allRecords.sort((a: any, b: any) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime());
@@ -47,7 +55,7 @@ export default function BloodPressureListScreen() {
         }
       };
       fetchRecords();
-    }, [])
+    }, [dateRange])
   );
 
   const groupData = () => {
@@ -151,6 +159,21 @@ export default function BloodPressureListScreen() {
             </ThemedText>
           </TouchableOpacity>
         </View>
+
+        {/* Tarih Filtresi */}
+        {activeTab === 'Liste' && (
+          <View style={{ paddingHorizontal: 4 }}>
+            <DateRangePicker
+              themeColor="#E11D48"
+              onApply={(startDate, endDate) => {
+                setDateRange({
+                  startDate: startDate ? new Date(`${startDate}T00:00:00`).toISOString() : undefined,
+                  endDate: endDate ? new Date(`${endDate}T23:59:59.999`).toISOString() : undefined
+                });
+              }}
+            />
+          </View>
+        )}
 
         {activeTab === 'Liste' ? (
           <View>
@@ -435,5 +458,23 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    marginRight: 8,
+  },
+  filterPillActive: {
+    backgroundColor: '#E11D48',
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  filterPillTextActive: {
+    color: '#FFF',
   },
 });

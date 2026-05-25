@@ -15,12 +15,20 @@ export const getDashboardData = async (days: number = 7) => {
   return response.data;
 };
 
-export const getBloodSugars = async () => {
-  const response = await api.get('/health/blood-sugar');
+export const getBloodSugars = async (filters?: { startDate?: string; endDate?: string }) => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await api.get(`/health/blood-sugar${query}`);
   return response.data;
 };
 
-export const getBloodPressures = async () => {
-  const response = await api.get('/health/blood-pressure');
+export const getBloodPressures = async (filters?: { startDate?: string; endDate?: string }) => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await api.get(`/health/blood-pressure${query}`);
   return response.data;
 };
