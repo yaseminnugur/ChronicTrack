@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Switch, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import { saveStep1Profile } from '../../services/onboardingService';
 import { filterDecimalInput, filterIntegerInput } from '../../utils/numberUtils';
 
 export default function Step1Screen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
-  const colors = Colors[theme as keyof typeof Colors];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [loading, setLoading] = useState(false);
   const [weight, setWeight] = useState('');
@@ -82,7 +81,7 @@ export default function Step1Screen() {
                 value={weight}
                 onChangeText={handleWeightInput}
                 placeholder="70"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="decimal-pad"
                 maxLength={5}
               />
@@ -97,7 +96,7 @@ export default function Step1Screen() {
                 value={height}
                 onChangeText={(text) => handleIntegerInput(text, setHeight)}
                 placeholder="175"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
                 maxLength={3}
               />
@@ -112,7 +111,7 @@ export default function Step1Screen() {
                 value={age}
                 onChangeText={(text) => handleIntegerInput(text, setAge)}
                 placeholder="45"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="numeric"
                 maxLength={3}
               />
@@ -133,7 +132,7 @@ export default function Step1Screen() {
               <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>Aktif olarak kullanıyor musunuz?</ThemedText>
             </View>
             <Switch
-              trackColor={{ false: "#D1D5DB", true: colors.primary }}
+              trackColor={{ false: colors.borderStrong, true: colors.primary }}
               thumbColor={"#FFFFFF"}
               onValueChange={setSmoker}
               value={smoker}
@@ -234,7 +233,7 @@ export default function Step1Screen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,7 +241,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB', // Lighter border
+    borderBottomColor: c.divider, // Lighter border
   },
   logoRow: {
     flexDirection: 'row',
@@ -298,7 +297,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6B7280',
+    color: c.textTertiary,
     marginBottom: 8,
     marginLeft: 4,
   },

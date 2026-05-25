@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -9,8 +9,8 @@ import {
   View,
 } from 'react-native';
 import { ThemedText } from './themed-text';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 
 export interface CustomButtonProps extends TouchableOpacityProps {
   title: string;
@@ -33,8 +33,9 @@ export function CustomButton({
   leftIcon,
   ...rest
 }: CustomButtonProps) {
-  const theme = useColorScheme() ?? 'light';
-  const primaryColor = Colors[theme].primary;
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const primaryColor = colors.primary;
 
   const getBackgroundColor = () => {
     if (variant === 'primary') return disabled ? '#A0C4E4' : primaryColor;
@@ -79,7 +80,7 @@ export function CustomButton({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   button: {
     height: 56,
     borderRadius: 28, // fully rounded pill

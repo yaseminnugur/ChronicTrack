@@ -1,19 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { completeOnboardingWithConditions } from '../../services/onboardingService';
 
 export default function Step2Screen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
-  const colors = Colors[theme as keyof typeof Colors];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { userToken, completeOnboarding } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -99,13 +98,13 @@ export default function Step2Screen() {
               >
                 <View style={[
                   styles.iconWrapper,
-                  { backgroundColor: item.id === 'Hiçbiri' ? '#E5E7EB' : (isSelected ? '#DDF0FF' : '#EAF3FA') }
+                  { backgroundColor: item.id === 'Hiçbiri' ? colors.divider : (isSelected ? '#DDF0FF' : '#EAF3FA') }
                 ]}>
                   {item.iconType === 'Ionicons' ? (
                     // @ts-ignore
-                    <Ionicons name={item.icon} size={24} color={item.id === 'Hiçbiri' ? '#6B7280' : colors.primary} />
+                    <Ionicons name={item.icon} size={24} color={item.id === 'Hiçbiri' ? colors.textTertiary : colors.primary} />
                   ) : (
-                    <FontAwesome5 name={item.icon} size={22} color={item.id === 'Hiçbiri' ? '#6B7280' : colors.primary} />
+                    <FontAwesome5 name={item.icon} size={22} color={item.id === 'Hiçbiri' ? colors.textTertiary : colors.primary} />
                   )}
                 </View>
 
@@ -167,7 +166,7 @@ export default function Step2Screen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -175,7 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: c.divider,
   },
   logoRow: {
     flexDirection: 'row',
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
   },
   itemSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: c.textTertiary,
     fontWeight: '500',
   },
   checkboxWrapper: {
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#C2C8D0',
+    borderColor: c.borderStrong,
   },
   bottomSection: {
     marginTop: 40,
@@ -272,7 +271,7 @@ const styles = StyleSheet.create({
   encryptionInfo: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#9CA3AF',
+    color: c.textMuted,
     letterSpacing: 0.5,
     textAlign: 'center',
   }

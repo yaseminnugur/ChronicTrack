@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 
 export default function AddMeasurementScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         <View style={styles.pageHeader}>
@@ -72,7 +77,7 @@ export default function AddMeasurementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 32,
@@ -85,7 +90,7 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 12,
     paddingTop: 8,
     lineHeight: 36,
@@ -93,16 +98,16 @@ const styles = StyleSheet.create({
   },
   pageSubtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 22,
     fontWeight: '500',
   },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 15,
@@ -129,13 +134,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1E293B',
+    color: c.text,
     marginBottom: 12,
     width: '85%',
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 20,
     marginBottom: 24,
   },

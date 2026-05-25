@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Control, Controller, FieldValues, Path } from 'react-hook-form';
 import { CustomInput, CustomInputProps } from './CustomInput';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from './themed-text';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 
 interface ControlledInputProps<T extends FieldValues> extends Omit<CustomInputProps, 'value' | 'onChangeText'> {
   control: Control<T>;
@@ -14,6 +16,9 @@ export function ControlledInput<T extends FieldValues>({
   name,
   ...props
 }: ControlledInputProps<T>) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Controller
       control={control}
@@ -38,7 +43,7 @@ export function ControlledInput<T extends FieldValues>({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   container: {
     width: '100%',
     marginBottom: 4,

@@ -4,17 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router, useLocalSearchParams } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
 import { filterDecimalInput } from '../../utils/numberUtils';
 import { validateHbA1c, HEALTH_RANGES } from '../../validations/healthValidation';
 
 export default function DiabetesEntryScreen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
-  const colors = Colors[theme as keyof typeof Colors];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { next } = useLocalSearchParams<{ next: string }>();
 
   const [diabetesType, setDiabetesType] = useState('');
@@ -143,7 +142,7 @@ export default function DiabetesEntryScreen() {
               value={sugarLevel}
               onChangeText={handleDecimalInput}
               placeholder="0.0"
-              placeholderTextColor="#D1D5DB"
+              placeholderTextColor={colors.borderStrong}
               keyboardType="decimal-pad"
               maxLength={5}
             />
@@ -174,7 +173,7 @@ export default function DiabetesEntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,7 +233,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: c.textTertiary,
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -275,7 +274,7 @@ const styles = StyleSheet.create({
   inputLabelBold: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#4B5563',
+    color: c.textSecondary,
   },
   iconCircleRound: {
     width: 24,
@@ -306,7 +305,7 @@ const styles = StyleSheet.create({
   },
   bottomHint: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: c.textMuted,
     textAlign: 'center',
     marginTop: 8,
   },

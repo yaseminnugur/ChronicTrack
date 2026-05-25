@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, TextInput, Switch, Platform, KeyboardAvoidingView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import { getUserProfile, updateUserProfile } from '../services/userService';
 import { filterDecimalInput, filterIntegerInput, safeParseInt } from '../utils/numberUtils';
 
 export default function EditProfileScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [age, setAge] = useState('');
@@ -99,19 +104,19 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color="#0EA5E9" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
 
       {/* Header View */}
       <View style={styles.topNav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#0F172A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -122,7 +127,7 @@ export default function EditProfileScreen() {
           <View style={styles.headerTitleRow}>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatarFallback}>
-                <Ionicons name="person" size={32} color="#94A3B8" />
+                <Ionicons name="person" size={32} color={colors.textMuted} />
               </View>
               <View style={styles.cameraBtn}>
                 <Ionicons name="camera" size={10} color="#FFF" />
@@ -142,7 +147,7 @@ export default function EditProfileScreen() {
               <ThemedText style={styles.inputLabel}>Kilo (kg)</ThemedText>
               <View style={styles.inputWrapper}>
                 <TextInput style={styles.input} value={weight} onChangeText={(text) => setWeight(filterDecimalInput(text))} keyboardType="decimal-pad" />
-                <MaterialCommunityIcons name="weight" size={20} color="#475569" />
+                <MaterialCommunityIcons name="weight" size={20} color={colors.textSecondary} />
               </View>
             </View>
 
@@ -150,7 +155,7 @@ export default function EditProfileScreen() {
               <ThemedText style={styles.inputLabel}>Boy (cm)</ThemedText>
               <View style={styles.inputWrapper}>
                 <TextInput style={styles.input} value={height} onChangeText={(text) => setHeight(filterIntegerInput(text))} keyboardType="numeric" />
-                <MaterialCommunityIcons name="ruler" size={20} color="#475569" />
+                <MaterialCommunityIcons name="ruler" size={20} color={colors.textSecondary} />
               </View>
             </View>
 
@@ -158,7 +163,7 @@ export default function EditProfileScreen() {
               <ThemedText style={styles.inputLabel}>Yaş</ThemedText>
               <View style={styles.inputWrapper}>
                 <TextInput style={styles.input} value={age} onChangeText={(text) => setAge(filterIntegerInput(text))} keyboardType="numeric" />
-                <Ionicons name="calendar-outline" size={20} color="#475569" />
+                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
               </View>
             </View>
           </View>
@@ -181,7 +186,7 @@ export default function EditProfileScreen() {
               <Switch
                 value={isSmoking}
                 onValueChange={setIsSmoking}
-                trackColor={{ false: '#E2E8F0', true: '#0EA5E9' }}
+                trackColor={{ false: colors.border, true: '#0EA5E9' }}
                 thumbColor={'#FFF'}
               />
             </View>
@@ -239,10 +244,10 @@ export default function EditProfileScreen() {
                     activeOpacity={0.8}
                     onPress={() => setShowTypeDropdown(!showTypeDropdown)}
                   >
-                    <ThemedText style={[styles.input, { color: diabetesType ? '#0F172A' : '#94A3B8' }]}>
+                    <ThemedText style={[styles.input, { color: diabetesType ? colors.text : colors.textMuted }]}>
                       {diabetesType || 'Tipinizi seçin'}
                     </ThemedText>
-                    <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#475569" />
+                    <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
                   {showTypeDropdown && (
                     <View style={styles.dropdownMenu}>
@@ -276,9 +281,9 @@ export default function EditProfileScreen() {
                       onChangeText={(text) => setHba1c(filterDecimalInput(text))}
                       keyboardType="decimal-pad"
                       placeholder="0.0"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={colors.textMuted}
                     />
-                    <ThemedText style={{ fontSize: 13, color: '#64748B', fontWeight: '600' }}>mg/dL</ThemedText>
+                    <ThemedText style={{ fontSize: 13, color: colors.textTertiary, fontWeight: '600' }}>mg/dL</ThemedText>
                   </View>
                 </View>
               )}
@@ -299,7 +304,7 @@ export default function EditProfileScreen() {
                             onChangeText={(text) => updateBPField(idx, 'sis', text)}
                             keyboardType="numeric"
                             placeholder="Sis"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textMuted}
                             maxLength={3}
                           />
                           <ThemedText style={styles.bpSlash}>/</ThemedText>
@@ -309,7 +314,7 @@ export default function EditProfileScreen() {
                             onChangeText={(text) => updateBPField(idx, 'dia', text)}
                             keyboardType="numeric"
                             placeholder="Dia"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textMuted}
                             maxLength={3}
                           />
                           <ThemedText style={styles.bpUnitText}>mmHg</ThemedText>
@@ -322,7 +327,7 @@ export default function EditProfileScreen() {
                             onChangeText={(text) => updateBPField(idx, 'pulse', text)}
                             keyboardType="numeric"
                             placeholder="Nabız"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textMuted}
                             maxLength={3}
                           />
                           <ThemedText style={styles.bpUnitText}>bpm</ThemedText>
@@ -358,7 +363,7 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topNav: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -368,10 +373,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -395,7 +400,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#334155',
+    backgroundColor: c.textSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -410,7 +415,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#F8FAFC',
+    borderColor: c.background,
   },
   headerTextCol: {
     flex: 1,
@@ -418,17 +423,17 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 4,
     lineHeight: 28,
   },
   subTitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: c.textTertiary,
     lineHeight: 18,
   },
   formSection: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 32,
     padding: 24,
     marginBottom: 16,
@@ -436,7 +441,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: c.textMuted,
     letterSpacing: 1,
     marginBottom: 20,
   },
@@ -446,17 +451,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: c.textSecondary,
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 5,
@@ -466,16 +471,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
   toggleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 16,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 5,
@@ -498,12 +503,12 @@ const styles = StyleSheet.create({
   toggleTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 4,
   },
   toggleDesc: {
     fontSize: 11,
-    color: '#64748B',
+    color: c.textTertiary,
   },
   pillGrid: {
     flexDirection: 'row',
@@ -514,14 +519,14 @@ const styles = StyleSheet.create({
   pillBtn: {
     flexBasis: '47%',
     margin: '1.5%',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FFF',
-    shadowColor: '#000',
+    borderColor: c.surface,
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 5,
@@ -534,7 +539,7 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
+    color: c.textSecondary,
   },
   pillTextActive: {
     color: '#1D4ED8',
@@ -564,14 +569,14 @@ const styles = StyleSheet.create({
   },
   saveInfoText: {
     fontSize: 12,
-    color: '#64748B',
+    color: c.textTertiary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   fabContainer: {
     padding: 24,
     paddingTop: 12,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
+    backgroundColor: c.fabBackdrop,
   },
   saveButton: {
     flexDirection: 'row',
@@ -593,10 +598,10 @@ const styles = StyleSheet.create({
   },
   dropdownMenu: {
     marginTop: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     overflow: 'hidden',
   },
   dropdownOption: {
@@ -609,21 +614,21 @@ const styles = StyleSheet.create({
   dropdownText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#334155',
+    color: c.textSecondary,
   },
   dropdownDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     width: '100%',
   },
   bpEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.02,
     shadowRadius: 4,
@@ -633,7 +638,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.iconCircleBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -641,7 +646,7 @@ const styles = StyleSheet.create({
   bpIndexText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: c.textSecondary,
   },
   bpInputGroup: {
     flex: 1,
@@ -655,23 +660,23 @@ const styles = StyleSheet.create({
     width: 50,
     height: 36,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     borderRadius: 10,
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
   bpSlash: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: c.textMuted,
     marginHorizontal: 6,
   },
   bpUnitText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: c.textTertiary,
     marginLeft: 8,
   },
   bpPulseWrapper: {
@@ -682,11 +687,11 @@ const styles = StyleSheet.create({
     width: 50,
     height: 32,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     borderRadius: 10,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
 });

@@ -4,17 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import { saveOnboardingData } from '../../services/onboardingService';
 import { filterIntegerInput } from '../../utils/numberUtils';
 import { validateBloodPressure, HEALTH_RANGES } from '../../validations/healthValidation';
 
 export default function BloodPressureEntryScreen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
-  const colors = Colors[theme as keyof typeof Colors];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [sets, setSets] = useState([
     { id: 1, sis: '', dia: '', pulse: '' },
@@ -144,7 +143,7 @@ export default function BloodPressureEntryScreen() {
                             value={item.sis}
                             onChangeText={(val) => updateSet(item.id, 'sis', val)}
                             placeholder="---"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="numeric"
                             maxLength={3}
                           />
@@ -161,7 +160,7 @@ export default function BloodPressureEntryScreen() {
                             value={item.dia}
                             onChangeText={(val) => updateSet(item.id, 'dia', val)}
                             placeholder="---"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="numeric"
                             maxLength={3}
                           />
@@ -178,7 +177,7 @@ export default function BloodPressureEntryScreen() {
                             value={item.pulse}
                             onChangeText={(val) => updateSet(item.id, 'pulse', val)}
                             placeholder="---"
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="numeric"
                             maxLength={3}
                           />
@@ -223,7 +222,7 @@ export default function BloodPressureEntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,7 +258,7 @@ const styles = StyleSheet.create({
   preTitle: {
     fontSize: 11,
     letterSpacing: 1.5,
-    color: '#9CA3AF',
+    color: c.textMuted,
     fontWeight: '700',
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -279,13 +278,13 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 32,
     marginBottom: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.04,
     shadowRadius: 15,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: c.surfaceSubtle,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -328,7 +327,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: c.divider,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -336,12 +335,12 @@ const styles = StyleSheet.create({
   circleText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#4B5563',
+    color: c.textSecondary,
   },
   line: {
     width: 2,
     flex: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: c.divider,
     marginTop: -4,
     marginBottom: -4,
   },
@@ -358,7 +357,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: c.textTertiary,
     marginBottom: 6,
   },
   smallInput: {
@@ -381,7 +380,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.surfaceSubtle,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
@@ -414,13 +413,13 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 12,
-    color: '#4B5563',
+    color: c.textSecondary,
     lineHeight: 18,
   },
   infoTextBold: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1E293B',
+    color: c.text,
   },
   skipButton: {
     shadowOpacity: 0,

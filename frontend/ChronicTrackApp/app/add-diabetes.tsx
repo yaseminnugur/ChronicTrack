@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodSugar } from '../services/healthService';
@@ -13,6 +15,9 @@ import { validateBloodSugar, HEALTH_RANGES } from '../validations/healthValidati
 const MEAL_OPTIONS = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık', 'Diğerleri'];
 
 export default function AddDiabetesScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [glucose, setGlucose] = useState('');
   const [notes, setNotes] = useState('');
   
@@ -86,12 +91,12 @@ export default function AddDiabetesScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+
       {/* Header with Back Button */}
       <View style={styles.topNav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#0F172A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -205,7 +210,7 @@ export default function AddDiabetesScreen() {
                 onChange={(e, d) => {
                   if (d) setDate(d);
                 }}
-                textColor="#0F172A"
+                textColor={colors.text}
                 style={{ width: 320, height: 200 }}
               />
             </Pressable>
@@ -266,7 +271,7 @@ export default function AddDiabetesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topNav: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -276,10 +281,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -311,17 +316,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 8,
     lineHeight: 36,
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 22,
   },
   guidanceBanner: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 20,
     padding: 20,
     marginBottom: 24,
@@ -335,29 +340,29 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.iconCircleBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   guidancePreTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: c.textTertiary,
     letterSpacing: 1,
     marginBottom: 6,
   },
   guidanceText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
     width: '75%',
     lineHeight: 20,
   },
   formCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 15,
@@ -366,13 +371,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#475569',
+    color: c.textSecondary,
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.surfaceSubtle,
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
@@ -388,11 +393,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     letterSpacing: 2,
   },
   unitBadge: {
-    backgroundColor: '#475569',
+    backgroundColor: c.textSecondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
@@ -425,7 +430,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: c.text,
   },
   multilineWrapper: {
     height: 100,
@@ -436,16 +441,16 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     fontSize: 14,
-    color: '#0F172A',
+    color: c.text,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: c.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -458,7 +463,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
   modalOption: {
     flexDirection: 'row',
@@ -466,10 +471,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: c.surfaceMuted,
   },
   modalOptionActive: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: c.background,
     borderRadius: 12,
     paddingHorizontal: 12,
     marginHorizontal: -12,
@@ -477,7 +482,7 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontSize: 16,
-    color: '#475569',
+    color: c.textSecondary,
     fontWeight: '500',
   },
   modalOptionTextActive: {
@@ -487,6 +492,6 @@ const styles = StyleSheet.create({
   fabContainer: {
     padding: 24,
     paddingTop: 12,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
+    backgroundColor: c.fabBackdrop,
   }
 });

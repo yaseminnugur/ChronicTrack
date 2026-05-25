@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router, useFocusEffect } from 'expo-router';
 import { getUserProfile } from '../../services/userService';
 import { getDashboardData } from '../../services/healthService';
 import { getBloodSugarStatus, getBloodPressureStatus } from '../../utils/healthStatusUtils';
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
-  const colors = Colors[theme as keyof typeof Colors];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [hasData, setHasData] = useState(false);
   const [activeTab, setActiveTab] = useState<'Kan Şekeri' | 'Tansiyon'>('Kan Şekeri');
@@ -45,10 +44,7 @@ export default function HomeScreen() {
             const condString = profileRes.user.chronicConditions || 'Hiçbiri';
             const condArr = condString.split(',').map((c: string) => c.trim());
             setConditions(condArr);
-            // Tüm kullanıcılar hem kan şekeri hem tansiyon ölçümü ekleyebilmeli
             setHasData(true);
-
-            // Varsayılan tab: Kan Şekeri
             setActiveTab('Kan Şekeri');
           }
 
@@ -129,14 +125,14 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color="#0EA5E9" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         <View style={styles.headerRow}>
@@ -146,7 +142,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* METRICS CARDS - Tüm kullanıcılar için her iki kart da görünür */}
+        {/* METRICS CARDS */}
         <View style={styles.rowCards}>
           <View style={[styles.filledCard, { marginRight: 8 }]}>
             <View style={styles.iconRedCircle}>
@@ -204,7 +200,7 @@ export default function HomeScreen() {
             {hasData ? (
               <TouchableOpacity style={styles.dropdownBadge} activeOpacity={0.7} onPress={() => setShowRangeModal(true)}>
                 <ThemedText style={styles.dropdownBadgeText}>{getRangeLabel()}</ThemedText>
-                <Ionicons name="chevron-down" size={12} color="#4B5563" />
+                <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
               <View style={styles.grayBadge}>
@@ -213,7 +209,6 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* Segment tab her zaman gösterilir */}
           {(
             <View style={styles.segmentContainer}>
               <TouchableOpacity
@@ -246,7 +241,6 @@ export default function HomeScreen() {
                   <ThemedText style={styles.tooltipText}>Seçim Yapın</ThemedText>
                 )}
               </View>
-              {/* Dynamic Bar Chart */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: 'flex-end', paddingBottom: 16 }}>
                 <View style={[styles.barsRow, { width: undefined, justifyContent: 'flex-start' }]}>
                   {currentChartData.map((item, index) => {
@@ -278,7 +272,7 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptyChartBox}>
               <View style={styles.emptyChartCircle}>
-                <Ionicons name="bar-chart-outline" size={32} color="#CBD5E1" />
+                <Ionicons name="bar-chart-outline" size={32} color={colors.borderStrong} />
               </View>
               <ThemedText style={styles.emptyChartTitle}>Henüz {activeTab} verisi bulunamadı</ThemedText>
               <ThemedText style={styles.emptyChartSubtitle}>
@@ -290,8 +284,6 @@ export default function HomeScreen() {
 
         <View style={{ flex: 1, minHeight: 40 }} />
 
-        {/* BOTTOM BUTTONS */}
-        {/* Butonlar tüm kullanıcılar için her zaman görünür */}
         <CustomButton
           title="Kan Şekeri Ekle"
           onPress={handleAddBloodSugar}
@@ -302,14 +294,13 @@ export default function HomeScreen() {
         <CustomButton
           title="Tansiyon Ekle"
           onPress={handleAddBloodPressure}
-          style={{ backgroundColor: '#E2E8F0', borderColor: 'transparent' }}
-          textStyle={{ color: '#0F172A' }}
-          leftIcon={<Ionicons name="add" size={20} color="#0F172A" style={{ marginRight: 6 }} />}
+          style={{ backgroundColor: colors.surfaceMuted, borderColor: 'transparent' }}
+          textStyle={{ color: colors.text }}
+          leftIcon={<Ionicons name="add" size={20} color={colors.text} style={{ marginRight: 6 }} />}
         />
 
       </ScrollView>
 
-      {/* Select Option Modal */}
       <Modal visible={showRangeModal} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setShowRangeModal(false)}>
           <View style={styles.modalOverlay}>
@@ -341,7 +332,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 24,
@@ -357,7 +348,7 @@ const styles = StyleSheet.create({
   preTitle: {
     fontSize: 11,
     letterSpacing: 1,
-    color: '#64748B',
+    color: c.textTertiary,
     fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -365,17 +356,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     lineHeight: 38,
     letterSpacing: -1,
   },
-  demoToggle: {
-    padding: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 20,
-  },
-
-  // Filled Cards
   rowCards: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -383,10 +367,10 @@ const styles = StyleSheet.create({
   },
   filledCard: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 15,
@@ -401,7 +385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
   },
   iconBlueCircle: {
     width: 32,
@@ -412,11 +396,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
   },
   cardLabel: {
     fontSize: 13,
-    color: '#475569',
+    color: c.textSecondary,
     fontWeight: '600',
     marginBottom: 4,
     lineHeight: 18,
@@ -428,89 +412,20 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     lineHeight: 34,
   },
   cardUnit: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: c.textMuted,
     fontWeight: '600',
     marginTop: 2,
   },
-
-  // Empty Cards
-  colCards: {
-    marginBottom: 32,
-  },
-  emptyCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  emptyCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  iconBlueCircleOutline: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconRedCircleOutline: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#FFE4E6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyCardBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
-    letterSpacing: 1,
-  },
-  emptyCardLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 4,
-  },
-  emptyCardPlaceholder: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontStyle: 'italic',
-    color: '#94A3B8',
-    marginBottom: 16,
-  },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  // Analysis Section
   analysisSection: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 15,
@@ -525,12 +440,12 @@ const styles = StyleSheet.create({
   analysisTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
   },
   dropdownBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -538,11 +453,11 @@ const styles = StyleSheet.create({
   dropdownBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#475569',
+    color: c.textSecondary,
     marginRight: 4,
   },
   grayBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -550,12 +465,11 @@ const styles = StyleSheet.create({
   grayBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
+    color: c.textTertiary,
   },
-
   segmentContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 24,
     padding: 4,
     marginBottom: 24,
@@ -577,15 +491,13 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#64748B',
+    color: c.textTertiary,
   },
   segmentTextActive: {
     color: '#FFF',
   },
-
-  // Chart
   chartBox: {
-    backgroundColor: '#E2EEED', // very light neutral/blue according to design
+    backgroundColor: c.surfaceMuted,
     borderRadius: 20,
     padding: 16,
     paddingTop: 32,
@@ -624,23 +536,15 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 10,
   },
-  xAxisRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 4,
-  },
   xAxisLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
     width: 24,
     textAlign: 'center',
   },
-
-  // Empty Chart
   emptyChartBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: c.background,
     borderRadius: 20,
     padding: 32,
     alignItems: 'center',
@@ -649,11 +553,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 8,
@@ -662,25 +566,23 @@ const styles = StyleSheet.create({
   emptyChartTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
+    color: c.textSecondary,
     marginBottom: 8,
   },
   emptyChartSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: c.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 16,
   },
-
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: c.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -689,7 +591,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -699,18 +601,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: c.border,
   },
   modalOptionText: {
     fontSize: 16,
-    color: '#475569',
+    color: c.textSecondary,
   },
   modalOptionActive: {
     color: '#0EA5E9',
     fontWeight: '600',
   },
-
-  // Status Badge
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',

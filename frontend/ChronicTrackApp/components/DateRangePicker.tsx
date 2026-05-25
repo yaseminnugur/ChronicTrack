@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Modal, TouchableOpacity } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { ThemedText } from './themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomButton } from './CustomButton';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 
 // Türkçe yerelleştirme
 LocaleConfig.locales['tr'] = {
@@ -29,6 +31,8 @@ const getLocalTodayString = () => {
 };
 
 export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: DateRangePickerProps) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [modalVisible, setModalVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
@@ -45,13 +49,13 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
       marks[startDate] = { startingDay: true, color: themeColor, textColor: 'white' };
       if (endDate) {
         marks[endDate] = { endingDay: true, color: themeColor, textColor: 'white' };
-        
+
         // Aradaki günleri doldur
         const start = new Date(startDate);
         const end = new Date(endDate);
         const current = new Date(start);
         current.setDate(current.getDate() + 1);
-        
+
         while (current < end) {
           const dateString = current.toISOString().split('T')[0];
           marks[dateString] = { color: themeColor, textColor: 'white', opacity: 0.5 };
@@ -108,8 +112,8 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
 
   return (
     <View>
-      <TouchableOpacity 
-        style={[styles.triggerBtn, { borderColor: themeColor }]} 
+      <TouchableOpacity
+        style={[styles.triggerBtn, { borderColor: themeColor }]}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.7}
       >
@@ -119,7 +123,7 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
         </ThemedText>
         {(startDate || endDate) && (
           <TouchableOpacity onPress={handleClear} style={{ marginLeft: 'auto', padding: 4 }}>
-            <Ionicons name="close-circle" size={16} color="#94A3B8" />
+            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -130,7 +134,7 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
             <View style={styles.modalHeader}>
               <ThemedText style={styles.modalTitle}>Tarih Aralığı Seç</ThemedText>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748B" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
@@ -147,7 +151,7 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
               theme={{
                 todayTextColor: themeColor,
                 arrowColor: themeColor,
-                textDisabledColor: '#CBD5E1',
+                textDisabledColor: colors.borderStrong,
               }}
             />
 
@@ -166,7 +170,7 @@ export default function DateRangePicker({ onApply, themeColor = '#0EA5E9' }: Dat
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   triggerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,7 +178,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     marginBottom: 16,
   },
   triggerText: {
@@ -183,12 +187,12 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: c.overlay,
     justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     overflow: 'hidden',
     padding: 20,
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
   actionRow: {
     flexDirection: 'row',
@@ -216,7 +220,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   clearBtnText: {
-    color: '#64748B',
+    color: c.textTertiary,
     fontWeight: '600',
   },
   applyBtn: {

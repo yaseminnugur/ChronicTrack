@@ -1,14 +1,13 @@
-import React, { ReactNode } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   TextInput,
   TextInputProps,
   StyleSheet,
   TouchableOpacity,
-  KeyboardTypeOptions,
 } from 'react-native';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { ThemedText } from './themed-text';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -38,8 +37,8 @@ export function CustomInput({
   error = false,
   ...rest
 }: CustomInputProps) {
-  const theme = useColorScheme() ?? 'light';
-  const colors = Colors[theme];
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isFocused, setIsFocused] = React.useState(false);
 
   const renderIcon = (type: string, name: string, size: number, color: string) => {
@@ -74,7 +73,7 @@ export function CustomInput({
       <View
         style={[
           styles.inputContainer,
-          { 
+          {
             backgroundColor: colors.inputBackground,
             borderColor: error ? '#FF3B30' : (isFocused ? colors.primary : colors.inputBackground),
             borderWidth: 1,
@@ -108,7 +107,7 @@ export function CustomInput({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   container: {
     marginBottom: 20,
     width: '100%',

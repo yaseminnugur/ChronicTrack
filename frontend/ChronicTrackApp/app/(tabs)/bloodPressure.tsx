@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router, useFocusEffect } from 'expo-router';
 import AnalysisView from '@/components/AnalysisView';
 import { getBloodPressureStatus } from '../../utils/healthStatusUtils';
@@ -11,6 +13,9 @@ import { getUserProfile } from '../../services/userService';
 import DateRangePicker from '@/components/DateRangePicker';
 
 export default function BloodPressureListScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [activeTab, setActiveTab] = useState<'Liste' | 'Analiz'>('Liste');
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,7 +124,7 @@ export default function BloodPressureListScreen() {
   const { formattedGroups, avgSys, avgDia } = groupData();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
 
       {/* Header */}
       <View style={styles.header}>
@@ -238,9 +243,9 @@ export default function BloodPressureListScreen() {
               ))
             ) : (
               <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                <Ionicons name="pulse" size={48} color="#CBD5E1" style={{ marginBottom: 16 }} />
-                <ThemedText style={{ fontSize: 16, fontWeight: '700', color: '#64748B' }}>Henüz kayıt bulunamadı.</ThemedText>
-                <ThemedText style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
+                <Ionicons name="pulse" size={48} color={colors.borderStrong} style={{ marginBottom: 16 }} />
+                <ThemedText style={{ fontSize: 16, fontWeight: '700', color: colors.textTertiary }}>Henüz kayıt bulunamadı.</ThemedText>
+                <ThemedText style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>İlk ölçümünüzü girmek için + butonuna tıklayın.</ThemedText>
               </View>
             )}
           </View>
@@ -252,7 +257,7 @@ export default function BloodPressureListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -264,14 +269,14 @@ const styles = StyleSheet.create({
   preTitle: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#64748B',
+    color: c.textTertiary,
     letterSpacing: 1,
     marginBottom: 4,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     lineHeight: 36,
   },
   addButton: {
@@ -294,7 +299,7 @@ const styles = StyleSheet.create({
   },
   segmentContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 24,
     padding: 4,
     marginBottom: 24,
@@ -306,8 +311,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   segmentBtnActive: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
+    backgroundColor: c.surface,
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -316,7 +321,7 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
+    color: c.textTertiary,
   },
   summaryCard: {
     backgroundColor: '#E11D48',
@@ -386,18 +391,18 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#334155',
+    color: c.textSecondary,
     marginBottom: 16,
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     padding: 16,
     borderRadius: 20,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.02,
     shadowRadius: 8,
@@ -411,11 +416,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -424,7 +429,7 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1E293B',
+    color: c.text,
   },
   statusDot: {
     width: 6,
@@ -434,7 +439,7 @@ const styles = StyleSheet.create({
   },
   itemTime: {
     fontSize: 11,
-    color: '#64748B',
+    color: c.textTertiary,
     fontWeight: '500',
   },
   itemRight: {
@@ -448,7 +453,7 @@ const styles = StyleSheet.create({
   itemUnit: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#64748B',
+    color: c.textTertiary,
     marginTop: 2,
   },
   pillStatus: {
@@ -463,7 +468,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     marginRight: 8,
   },
   filterPillActive: {
@@ -472,7 +477,7 @@ const styles = StyleSheet.create({
   filterPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
+    color: c.textTertiary,
   },
   filterPillTextActive: {
     color: '#FFF',

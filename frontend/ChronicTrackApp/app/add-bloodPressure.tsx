@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { CustomButton } from '@/components/CustomButton';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodPressure } from '../services/healthService';
@@ -11,6 +13,9 @@ import { filterIntegerInput } from '../utils/numberUtils';
 import { validateBloodPressure, HEALTH_RANGES } from '../validations/healthValidation';
 
 export default function AddBloodPressureScreen() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [sis, setSis] = useState('');
   const [dia, setDia] = useState('');
   const [pulse, setPulse] = useState('');
@@ -84,12 +89,12 @@ export default function AddBloodPressureScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
-      
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+
       {/* Header with Back Button */}
       <View style={styles.topNav}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#0F172A" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -183,7 +188,7 @@ export default function AddBloodPressureScreen() {
             <ThemedText style={styles.dateTextPlaceholder}>
               {date.toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
             </ThemedText>
-            <FontAwesome5 name="calendar-alt" size={16} color="#4B5563" />
+            <FontAwesome5 name="calendar-alt" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <ThemedText style={styles.label}>NOTLAR</ThemedText>
@@ -239,7 +244,7 @@ export default function AddBloodPressureScreen() {
                 onChange={(e, d) => {
                   if (d) setDate(d);
                 }}
-                textColor="#0F172A"
+                textColor={colors.text}
                 style={{ width: 320, height: 200 }}
               />
             </Pressable>
@@ -271,7 +276,7 @@ export default function AddBloodPressureScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   topNav: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -281,10 +286,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -316,20 +321,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 8,
     lineHeight: 36,
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 22,
   },
   formCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
     shadowRadius: 15,
@@ -338,13 +343,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#475569',
+    color: c.textSecondary,
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: c.surfaceSubtle,
     borderRadius: 16,
     height: 56,
     paddingHorizontal: 16,
@@ -360,7 +365,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#0F172A',
+    color: c.text,
   },
   unitText: {
     fontSize: 14,
@@ -396,7 +401,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: c.text,
   },
   multilineWrapper: {
     height: 100,
@@ -407,7 +412,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     fontSize: 14,
-    color: '#0F172A',
+    color: c.text,
   },
   infoBox: {
     flexDirection: 'row',
@@ -429,17 +434,17 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 12,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 18,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: c.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -451,11 +456,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: c.text,
   },
   fabContainer: {
     padding: 24,
     paddingTop: 12,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
+    backgroundColor: c.fabBackdrop,
   }
 });

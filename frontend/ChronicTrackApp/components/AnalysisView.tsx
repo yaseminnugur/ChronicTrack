@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import type { ColorPalette } from '@/constants/theme';
 
 export default function AnalysisView() {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
-      
+
       {/* Genel Sağlık Riski Card */}
       <View style={styles.riskCard}>
         <View style={styles.riskHeader}>
@@ -69,8 +74,8 @@ export default function AnalysisView() {
 
       {/* Rec 3 */}
       <View style={styles.recCard}>
-        <View style={[styles.recIconCircle, { backgroundColor: '#E2E8F0' }]}>
-          <FontAwesome5 name="spa" size={16} color="#0F172A" />
+        <View style={[styles.recIconCircle, { backgroundColor: colors.iconCircleBg }]}>
+          <FontAwesome5 name="spa" size={16} color={colors.text} />
         </View>
         <View style={styles.recContent}>
           <ThemedText style={styles.recTitle}>Rehberli Nefes</ThemedText>
@@ -107,12 +112,12 @@ export default function AnalysisView() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   container: {
     paddingBottom: 40,
   },
   riskCard: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.surfaceMuted,
     borderRadius: 24,
     padding: 24,
     marginBottom: 32,
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
   riskPreTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#475569',
+    color: c.textSecondary,
     letterSpacing: 1,
     lineHeight: 16,
     width: '40%',
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
   },
   riskDescription: {
     fontSize: 13,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 20,
     marginBottom: 20,
   },
@@ -174,7 +179,7 @@ const styles = StyleSheet.create({
   },
   miniCard: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 4,
@@ -182,30 +187,30 @@ const styles = StyleSheet.create({
   miniCardValue: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 2,
     lineHeight: 20,
   },
   miniCardLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: c.textTertiary,
     lineHeight: 16,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#1E293B',
+    color: c.text,
     marginBottom: 16,
     marginLeft: 4,
     lineHeight: 20,
   },
   recCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    backgroundColor: c.surface,
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 10,
@@ -225,13 +230,13 @@ const styles = StyleSheet.create({
   recTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: c.text,
     marginBottom: 6,
     lineHeight: 20,
   },
   recDesc: {
     fontSize: 12,
-    color: '#475569',
+    color: c.textSecondary,
     lineHeight: 18,
   },
   alertCard: {

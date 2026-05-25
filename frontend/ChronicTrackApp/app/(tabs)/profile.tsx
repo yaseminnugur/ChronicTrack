@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { getUserProfile } from '../../services/userService';
+import { useColors, useTheme } from '@/context/ThemeContext';
+import type { ColorPalette, ThemeMode } from '@/constants/theme';
 
 export default function ProfileTab() {
   const { signOut } = useAuth();
+  const colors = useColors();
+  const { mode, setMode } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,114 +45,159 @@ export default function ProfileTab() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
         <ThemedText>Yükleniyor...</ThemedText>
       </SafeAreaView>
     );
   }
 
+  const themeOptions: { key: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { key: 'light', label: 'Açık', icon: 'sunny-outline' },
+    { key: 'dark', label: 'Koyu', icon: 'moon-outline' },
+    { key: 'system', label: 'Sistem', icon: 'phone-portrait-outline' },
+  ];
+
+  const stats = [
+    { label: 'KİLO', value: profile?.weight || '--', unit: 'kg' },
+    { label: 'BOY', value: profile?.height || '--', unit: 'cm' },
+    { label: 'YAŞ', value: profile?.age || '--', unit: 'yaş' },
+  ];
+
+  const lifestyle = [
+    {
+      label: 'Sigara',
+      value: profile?.isSmoking ? 'Kullanıyor' : 'Kullanmıyor',
+      icon: <FontAwesome5 name="smoking-ban" size={16} color={colors.textSecondary} />,
+    },
+    {
+      label: 'Fiziksel Aktivite',
+      value: profile?.activityLevel || 'Belirtilmedi',
+      icon: <Ionicons name="barbell-outline" size={18} color="#0284C7" />,
+    },
+    {
+      label: 'Tuz Tüketimi',
+      value: profile?.saltLevel || 'Belirtilmedi',
+      icon: <Ionicons name="water-outline" size={18} color="#991B1B" />,
+    },
+  ];
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Profile Header */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-          </TouchableOpacity>
-
+        {/* Compact Header: avatar + isim yan yana */}
+        <View style={styles.headerRow}>
           <View style={styles.avatarWrapper}>
-            {/* Fallback avatar icon if no image */}
             <View style={styles.avatarFallback}>
-              <Ionicons name="person" size={48} color="#94A3B8" />
+              <Ionicons name="person" size={28} color={colors.textMuted} />
             </View>
-            <TouchableOpacity style={styles.editAvatarBtn} activeOpacity={0.8} onPress={() => router.push('/edit-profile')}>
-              <FontAwesome5 name="pen" size={10} color="#FFF" />
+            <TouchableOpacity
+              style={styles.editAvatarBtn}
+              activeOpacity={0.8}
+              onPress={() => router.push('/edit-profile')}
+            >
+              <FontAwesome5 name="pen" size={8} color="#FFF" />
             </TouchableOpacity>
           </View>
-          <ThemedText style={styles.userName}>{profile?.name || 'Kullanıcı'}</ThemedText>
+
+          <View style={styles.headerTextCol}>
+            <ThemedText style={styles.headerLabel}>HOŞ GELDİN</ThemedText>
+            <ThemedText style={styles.userName} numberOfLines={1}>
+              {profile?.name || 'Kullanıcı'}
+            </ThemedText>
+          </View>
+
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
+            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+          </TouchableOpacity>
         </View>
 
-        {/* Info Section */}
-        <View style={styles.sectionContainer}>
-          <ThemedText style={styles.sectionTitle}>Sağlık Özeti</ThemedText>
-
-          {/* Card: Kilo */}
-          <View style={styles.summaryCard}>
-            <View style={styles.cardHeaderRow}>
-              <MaterialCommunityIcons name="weight" size={24} color="#0284C7" />
-              <ThemedText style={styles.cardLabelText}>KİLO</ThemedText>
+        {/* Stat Grid — Kilo / Boy / Yaş */}
+        <View style={styles.statGrid}>
+          {stats.map((stat, i) => (
+            <View
+              key={stat.label}
+              style={[
+                styles.statCard,
+                i !== stats.length - 1 && styles.statCardDivider,
+              ]}
+            >
+              <ThemedText style={styles.statLabel}>{stat.label}</ThemedText>
+              <View style={styles.statValueRow}>
+                <ThemedText style={styles.statValue}>{stat.value}</ThemedText>
+              </View>
+              <ThemedText style={styles.statUnit}>{stat.unit}</ThemedText>
             </View>
-            <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>{profile?.weight || '--'}</ThemedText>
-              <ThemedText style={styles.cardValueUnit}>kg</ThemedText>
-            </View>
-          </View>
-
-          {/* Card: Boy */}
-          <View style={styles.summaryCard}>
-            <View style={styles.cardHeaderRow}>
-              <MaterialCommunityIcons name="ruler" size={24} color="#0284C7" />
-              <ThemedText style={styles.cardLabelText}>BOY</ThemedText>
-            </View>
-            <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>{profile?.height || '--'}</ThemedText>
-              <ThemedText style={styles.cardValueUnit}>cm</ThemedText>
-            </View>
-          </View>
-
-          {/* Card: Yaş */}
-          <View style={styles.summaryCard}>
-            <View style={styles.cardHeaderRow}>
-              <MaterialCommunityIcons name="calendar-blank" size={24} color="#0284C7" />
-              <ThemedText style={styles.cardLabelText}>YAŞ</ThemedText>
-            </View>
-            <View style={styles.cardValueRow}>
-              <ThemedText style={styles.cardValueBig}>{profile?.age || '--'}</ThemedText>
-              <ThemedText style={styles.cardValueUnit}>yaş</ThemedText>
-            </View>
-          </View>
-
-          {/* Card: Sigara Kullanımı */}
-          <View style={styles.rowCard}>
-            <View style={styles.rowCardIconWrapper}>
-              <FontAwesome5 name="smoking-ban" size={18} color="#64748B" />
-            </View>
-            <View style={styles.rowCardTextCol}>
-              <ThemedText style={styles.rowCardLabel}>SİGARA KULLANIMI</ThemedText>
-              <ThemedText style={styles.rowCardValue}>{profile?.isSmoking ? 'Kullanıyor' : 'Kullanmıyor'}</ThemedText>
-            </View>
-          </View>
-
-          {/* Card: Fiziksel Aktivite */}
-          <View style={styles.rowCard}>
-            <View style={[styles.rowCardIconWrapper, { backgroundColor: '#FFF' }]}>
-              <Ionicons name="barbell" size={20} color="#0284C7" />
-            </View>
-            <View style={styles.rowCardTextCol}>
-              <ThemedText style={styles.rowCardLabel}>FİZİKSEL AKTİVİTE</ThemedText>
-              <ThemedText style={styles.rowCardValue}>{profile?.activityLevel || 'Belirtilmedi'}</ThemedText>
-            </View>
-          </View>
-
-          {/* Card: Tuz Tüketimi */}
-          <View style={styles.rowCard}>
-            <View style={[styles.rowCardIconWrapper, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="water" size={20} color="#991B1B" />
-            </View>
-            <View style={styles.rowCardTextCol}>
-              <ThemedText style={styles.rowCardLabel}>TUZ TÜKETİMİ</ThemedText>
-              <ThemedText style={styles.rowCardValue}>{profile?.saltLevel || 'Belirtilmedi'}</ThemedText>
-            </View>
-          </View>
-
+          ))}
         </View>
 
+        {/* Lifestyle List */}
+        <ThemedText style={styles.sectionHeader}>Yaşam Tarzı</ThemedText>
+        <View style={styles.listCard}>
+          {lifestyle.map((item, i) => (
+            <View
+              key={item.label}
+              style={[
+                styles.listRow,
+                i !== lifestyle.length - 1 && styles.listRowDivider,
+              ]}
+            >
+              <View style={styles.listIcon}>{item.icon}</View>
+              <ThemedText style={styles.listLabel}>{item.label}</ThemedText>
+              <ThemedText style={styles.listValue} numberOfLines={1}>
+                {item.value}
+              </ThemedText>
+            </View>
+          ))}
+        </View>
+
+        {/* Görünüm */}
+        <ThemedText style={styles.sectionHeader}>Görünüm</ThemedText>
+        <View style={styles.themeCard}>
+          <View style={styles.themeRow}>
+            {themeOptions.map((opt) => {
+              const active = mode === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.themeOption, active && styles.themeOptionActive]}
+                  activeOpacity={0.8}
+                  onPress={() => setMode(opt.key)}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={18}
+                    color={active ? '#FFF' : colors.textSecondary}
+                  />
+                  <ThemedText
+                    style={[
+                      styles.themeOptionLabel,
+                      { color: active ? '#FFF' : colors.textSecondary },
+                    ]}
+                  >
+                    {opt.label}
+                  </ThemedText>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <ThemedText style={styles.themeHint}>
+            {mode === 'system'
+              ? 'Cihaz ayarlarınızla otomatik eşleşir.'
+              : mode === 'dark'
+              ? 'Koyu tema her zaman aktif.'
+              : 'Açık tema her zaman aktif.'}
+          </ThemedText>
+        </View>
       </ScrollView>
 
       {/* Floating Action Button */}
       <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.updateButton} activeOpacity={0.9} onPress={() => router.push('/edit-profile')}>
+        <TouchableOpacity
+          style={styles.updateButton}
+          activeOpacity={0.9}
+          onPress={() => router.push('/edit-profile')}
+        >
           <FontAwesome5 name="briefcase-medical" size={16} color="#FFF" style={{ marginRight: 8 }} />
           <ThemedText style={styles.updateButtonText}>Tıbbi Profili Güncelle</ThemedText>
         </TouchableOpacity>
@@ -155,155 +206,224 @@ export default function ProfileTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ColorPalette) => StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 100,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 120,
   },
-  headerContainer: {
+
+  // Compact header
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
-    position: 'relative',
-  },
-  logoutBtn: {
-    position: 'absolute',
-    top: -10,
-    right: 0,
-    padding: 8,
+    marginBottom: 28,
   },
   avatarWrapper: {
     position: 'relative',
-    marginBottom: 16,
+    marginRight: 14,
   },
   avatarFallback: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#334155',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: c.iconCircleBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   editAvatarBtn: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#0284C7',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#F8FAFC',
+    borderColor: c.background,
   },
-  userName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 30,
+  headerTextCol: {
+    flex: 1,
   },
-  sectionContainer: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 32,
-    padding: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#334155',
-    marginBottom: 20,
-  },
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  cardLabelText: {
+  headerLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 1,
+    color: c.textTertiary,
+    letterSpacing: 1.2,
+    marginBottom: 2,
   },
-  cardValueRow: {
+  userName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: c.text,
+    lineHeight: 26,
+  },
+  logoutBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Stat grid
+  statGrid: {
+    flexDirection: 'row',
+    backgroundColor: c.surface,
+    borderRadius: 20,
+    paddingVertical: 18,
+    marginBottom: 32,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  statCardDivider: {
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: c.border,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: c.textTertiary,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  statValueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  cardValueBig: {
-    fontSize: 32,
+  statValue: {
+    fontSize: 26,
     fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 38,
+    color: c.text,
+    lineHeight: 30,
   },
-  cardValueUnit: {
+  statUnit: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: c.textTertiary,
+    marginTop: 4,
+  },
+
+  // Section header (üst başlık)
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: c.textTertiary,
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+  },
+
+  // Lifestyle list
+  listCard: {
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 28,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  listRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: c.border,
+  },
+  listIcon: {
+    width: 28,
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  listLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: c.text,
+  },
+  listValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#475569',
-    marginLeft: 6,
+    color: c.textSecondary,
+    maxWidth: 160,
+    textAlign: 'right',
   },
-  rowCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
+
+  // Theme card
+  themeCard: {
+    backgroundColor: c.surface,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
+    shadowOpacity: 0.03,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
-  rowCardIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E2E8F0',
+  themeRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    paddingVertical: 11,
+    borderRadius: 12,
+    gap: 6,
+    backgroundColor: c.surfaceMuted,
   },
-  rowCardTextCol: {
-    flex: 1,
+  themeOptionActive: {
+    backgroundColor: '#0EA5E9',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  rowCardLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 1,
-    marginBottom: 4,
+  themeOptionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
   },
-  rowCardValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 22,
+  themeHint: {
+    fontSize: 11,
+    color: c.textTertiary,
+    marginTop: 10,
+    textAlign: 'center',
   },
+
+  // FAB
   fabContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    backgroundColor: 'rgba(248, 250, 252, 0.9)', // frosted glass effect could be added
+    padding: 20,
+    backgroundColor: c.fabBackdrop,
   },
   updateButton: {
     flexDirection: 'row',
     backgroundColor: '#0EA5E9',
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#0EA5E9',
@@ -314,7 +434,7 @@ const styles = StyleSheet.create({
   },
   updateButtonText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-  }
+  },
 });
