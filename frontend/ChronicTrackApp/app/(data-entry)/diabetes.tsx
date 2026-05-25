@@ -146,7 +146,7 @@ export default function DiabetesEntryScreen() {
               keyboardType="decimal-pad"
               maxLength={5}
             />
-            <ThemedText style={styles.unitText}>mg/dL</ThemedText>
+            <ThemedText style={styles.unitText}>%</ThemedText>
           </View>
 
           {showErrors && validation.errors.hba1c ? (

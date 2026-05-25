@@ -3,6 +3,10 @@ import prisma from '../db.ts';
 import { safeParseFloat, safeParseInt, isValidNumber } from '../utils/numberUtils.ts';
 import { validateBloodSugarInput, validateBloodPressureInput } from '../utils/healthValidation.ts';
 
+// Bu liste frontend MEAL_STATES ve bloodSugarAnalyzer FASTING_STATES/POSTPRANDIAL_STATE
+// ile uyumlu olmak zorunda. Yeni seçenek eklenirse hepsi güncellenmeli.
+const ALLOWED_MEAL_STATES = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık'];
+
 export const addBloodSugar = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -14,6 +18,14 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
 
     if (!glucose || !isValidNumber(glucose)) {
       res.status(400).json({ error: 'Geçerli bir glikoz değeri girin.' });
+      return;
+    }
+
+    // Öğün durumu zorunlu — AI analizinde post-meal spike vb. sinyaller için kritik
+    if (!mealState || !ALLOWED_MEAL_STATES.includes(mealState)) {
+      res.status(400).json({
+        error: 'Öğün durumu seçimi zorunludur.',
+      });
       return;
     }
 
@@ -31,7 +43,7 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
       data: {
         userId,
         glucose: safeParseFloat(glucose),
-        mealState: mealState || 'Belirtilmedi',
+        mealState,
         notes: notes || '',
       }
     });

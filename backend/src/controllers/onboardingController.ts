@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../db.ts';
 import { safeParseFloat, safeParseInt } from '../utils/numberUtils.ts';
 import { validateHbA1cInput, validateBloodPressureInput } from '../utils/healthValidation.ts';
+import { getOrGenerateAnalysis } from '../services/aiAnalysisService.ts';
 
 export const saveProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -82,11 +83,33 @@ export const saveConditionsAndComplete = async (req: Request, res: Response): Pr
       message: 'Onboarding tamamlandı.',
       user: updatedUser,
     });
+
+    // Fire-and-forget: kullanıcı ana ekrana geçerken arka planda ilk analizleri üret.
+    // Yeterli veri yoksa (örn. hiç kan şekeri ölçümü yoksa) orchestrator AI çağırmaz,
+    // boş narrative kaydedilir; kullanıcı ölçüm girdikçe gerçek analize geçilir.
+    triggerInitialAnalyses(userId);
   } catch (error) {
     console.error('Onboarding tamamlama hatası:', error);
     res.status(500).json({ error: 'Sunucu hatası meydana geldi.' });
   }
 };
+
+function triggerInitialAnalyses(userId: string): void {
+  Promise.allSettled([
+    getOrGenerateAnalysis(userId, 'BLOOD_SUGAR'),
+    getOrGenerateAnalysis(userId, 'BLOOD_PRESSURE'),
+  ])
+    .then((results) => {
+      results.forEach((r, i) => {
+        const type = i === 0 ? 'BLOOD_SUGAR' : 'BLOOD_PRESSURE';
+        if (r.status === 'rejected') {
+          console.error(`İlk ${type} analizi başarısız:`, r.reason);
+        } else {
+          console.log(`İlk ${type} analizi üretildi (cache=${r.value.fromCache})`);
+        }
+      });
+    });
+}
 
 export const saveOnboardingData = async (req: Request, res: Response): Promise<void> => {
   try {

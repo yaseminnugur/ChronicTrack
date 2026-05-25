@@ -20,6 +20,8 @@ export default function BloodPressureListScreen() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{ startDate?: string, endDate?: string }>({});
+  // AnalysisView'ı yeniden tetiklemek için sayaç. Her odak/yenileme sonrası bumplar.
+  const [dataVersion, setDataVersion] = useState(0);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -53,6 +55,7 @@ export default function BloodPressureListScreen() {
           allRecords.sort((a: any, b: any) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime());
 
           setRecords(allRecords);
+          setDataVersion((v) => v + 1);
         } catch (e) {
           console.error(e);
         } finally {
@@ -250,7 +253,7 @@ export default function BloodPressureListScreen() {
             )}
           </View>
         ) : (
-          <AnalysisView />
+          <AnalysisView analysisType="BLOOD_PRESSURE" dataVersion={dataVersion} />
         )}
       </ScrollView>
     </SafeAreaView>

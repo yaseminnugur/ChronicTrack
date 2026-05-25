@@ -21,6 +21,8 @@ export default function DiabetesListScreen() {
   const [onboardingData, setOnboardingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{ startDate?: string, endDate?: string }>({});
+  // AnalysisView'ı yeniden tetiklemek için sayaç. Her odak/yenileme sonrası bumplar.
+  const [dataVersion, setDataVersion] = useState(0);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -34,6 +36,7 @@ export default function DiabetesListScreen() {
           if (profile?.user?.onboardingData) {
             setOnboardingData(profile.user.onboardingData);
           }
+          setDataVersion((v) => v + 1);
         } catch (e) {
           console.error(e);
         } finally {
@@ -213,7 +216,7 @@ export default function DiabetesListScreen() {
                  </View>
                  <View style={styles.hba1cValueRow}>
                     <ThemedText style={styles.hba1cValue}>{onboardingData.hba1c}</ThemedText>
-                    <ThemedText style={styles.hba1cUnit}>mg/dL</ThemedText>
+                    <ThemedText style={styles.hba1cUnit}>%</ThemedText>
                  </View>
                  {onboardingData.diabetesType && (
                    <ThemedText style={styles.hba1cTypeText}>
@@ -272,7 +275,7 @@ export default function DiabetesListScreen() {
         )}
           </View>
         ) : (
-          <AnalysisView />
+          <AnalysisView analysisType="BLOOD_SUGAR" dataVersion={dataVersion} />
         )}
 
       </ScrollView>

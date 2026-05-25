@@ -10,9 +10,7 @@ import { router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { saveBloodSugar } from '../services/healthService';
 import { filterDecimalInput } from '../utils/numberUtils';
-import { validateBloodSugar, HEALTH_RANGES } from '../validations/healthValidation';
-
-const MEAL_OPTIONS = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık', 'Diğerleri'];
+import { validateBloodSugar, HEALTH_RANGES, MEAL_STATES } from '../validations/healthValidation';
 
 export default function AddDiabetesScreen() {
   const colors = useColors();
@@ -26,13 +24,13 @@ export default function AddDiabetesScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [iosPickerStep, setIosPickerStep] = useState<'date' | 'time'>('date');
   
-  const [mealState, setMealState] = useState(MEAL_OPTIONS[0]);
+  const [mealState, setMealState] = useState<string | null>(null);
   const [showMealModal, setShowMealModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
   // Gerçek zamanlı validasyon
-  const validation = useMemo(() => validateBloodSugar(glucose), [glucose]);
+  const validation = useMemo(() => validateBloodSugar(glucose, mealState), [glucose, mealState]);
 
   const handleSave = async () => {
     setShowErrors(true);
@@ -42,7 +40,7 @@ export default function AddDiabetesScreen() {
     }
 
     try {
-      if (glucose) {
+      if (glucose && mealState) {
         setSaving(true);
         await saveBloodSugar({
           glucose,
@@ -160,10 +158,30 @@ export default function AddDiabetesScreen() {
           </TouchableOpacity>
 
           <ThemedText style={styles.label}>ÖĞÜN DURUMU</ThemedText>
-          <TouchableOpacity style={styles.inputWrapper} activeOpacity={0.7} onPress={() => setShowMealModal(true)}>
-            <ThemedText style={styles.dateTextPlaceholder}>{mealState}</ThemedText>
+          <TouchableOpacity
+            style={[
+              styles.inputWrapper,
+              showErrors && validation.errors.mealState ? styles.inputWrapperError : null,
+            ]}
+            activeOpacity={0.7}
+            onPress={() => setShowMealModal(true)}
+          >
+            <ThemedText
+              style={[
+                styles.dateTextPlaceholder,
+                !mealState && { color: '#9CA3AF', fontWeight: '500' },
+              ]}
+            >
+              {mealState || 'Öğün durumu seçin'}
+            </ThemedText>
             <Ionicons name="chevron-down" size={20} color="#4B5563" />
           </TouchableOpacity>
+          {showErrors && validation.errors.mealState ? (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle" size={14} color="#DC2626" />
+              <ThemedText style={styles.errorText}>{validation.errors.mealState}</ThemedText>
+            </View>
+          ) : null}
 
           <ThemedText style={styles.label}>NOTLAR</ThemedText>
           <View style={[styles.inputWrapper, styles.multilineWrapper]}>
@@ -245,7 +263,7 @@ export default function AddDiabetesScreen() {
             <View style={styles.modalHeader}>
               <ThemedText style={styles.modalTitle}>Öğün Durumu Seçin</ThemedText>
             </View>
-            {MEAL_OPTIONS.map((opt, i) => {
+            {MEAL_STATES.map((opt, i) => {
               const isSelected = mealState === opt;
               return (
                 <TouchableOpacity 

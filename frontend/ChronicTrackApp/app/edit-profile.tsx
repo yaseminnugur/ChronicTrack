@@ -283,7 +283,7 @@ export default function EditProfileScreen() {
                       placeholder="0.0"
                       placeholderTextColor={colors.textMuted}
                     />
-                    <ThemedText style={{ fontSize: 13, color: colors.textTertiary, fontWeight: '600' }}>mg/dL</ThemedText>
+                    <ThemedText style={{ fontSize: 13, color: colors.textTertiary, fontWeight: '600' }}>%</ThemedText>
                   </View>
                 </View>
               )}

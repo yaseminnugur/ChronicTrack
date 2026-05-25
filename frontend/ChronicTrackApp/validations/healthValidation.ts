@@ -64,6 +64,18 @@ export const HEALTH_RANGES = {
 
 export type HealthField = keyof typeof HEALTH_RANGES;
 
+// ── Öğün durumu seçenekleri ────────────────────────────────────────────────
+// Bu liste deterministic analyzer (postMealSpike vb.) ile uyumlu olmak zorunda.
+// Yeni bir seçenek eklenirse backend whitelist'i ve bloodSugarAnalyzer
+// FASTING_STATES / POSTPRANDIAL_STATE listeleri de güncellenmeli.
+export const MEAL_STATES = [
+  'Yemek Öncesi',
+  'Yemek Sonrası',
+  'Uyku Öncesi',
+  'Açlık',
+] as const;
+export type MealState = typeof MEAL_STATES[number];
+
 // ── Validasyon sonuç tipi ───────────────────────────────────────────────────
 
 export interface ValidationResult {
@@ -171,14 +183,22 @@ export interface BloodSugarValidation {
   isValid: boolean;
   errors: {
     glucose?: string;
+    mealState?: string;
   };
 }
 
-export const validateBloodSugar = (glucose: string): BloodSugarValidation => {
+export const validateBloodSugar = (
+  glucose: string,
+  mealState: string | null | undefined
+): BloodSugarValidation => {
   const errors: BloodSugarValidation['errors'] = {};
 
   const result = validateHealthField('glucose', glucose, true);
   if (!result.isValid) errors.glucose = result.error;
+
+  if (!mealState || !(MEAL_STATES as readonly string[]).includes(mealState)) {
+    errors.mealState = 'Öğün durumu seçimi zorunludur.';
+  }
 
   return {
     isValid: Object.keys(errors).length === 0,
