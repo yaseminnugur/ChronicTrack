@@ -13,6 +13,8 @@ jobs:
     steps:
     - name: Repo'yu çek
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.CI_PAT }}
 
     - name: Node kur
       uses: actions/setup-node@v4
@@ -56,6 +58,8 @@ jobs:
     steps:
     - name: Repo'yu çek
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.CI_PAT }}
 
     - name: Node kur
       uses: actions/setup-node@v4
