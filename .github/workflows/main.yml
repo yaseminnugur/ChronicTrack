@@ -3,6 +3,8 @@ name: CI Pipeline
 on:
   push:
     branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
 
 jobs:
   expo:
@@ -24,6 +26,10 @@ jobs:
     - name: Lint kontrolü
       working-directory: frontend/ChronicTrackApp
       run: npm run lint || echo "lint yok"
+
+    - name: Testleri çalıştır
+      working-directory: frontend/ChronicTrackApp
+      run: npm test
 
     - name: Expo proje kontrolü
       working-directory: frontend/ChronicTrackApp
@@ -62,6 +68,6 @@ jobs:
 
     - name: Testleri çalıştır
       working-directory: backend
-      run: npm test || echo "Test bulunamadı"
+      run: npm test
       env:
         DATABASE_URL: postgresql://root:password@localhost:5432/chronictrack_test
