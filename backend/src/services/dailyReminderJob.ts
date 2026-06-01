@@ -12,8 +12,7 @@ import { sendExpoPush, type ExpoPushMessage } from './expoPushService.ts';
 
 const REMINDER_TITLE = 'ChronicTrack';
 const REMINDER_BODY = 'Bugünkü sağlık ölçümünü yapmayı unutma! 📋';
-// TEST MODE: '*/1 * * * *' = her dakika. Production: '0 9 * * *'
-const SCHEDULE = '*/1 * * * *';
+const SCHEDULE = '0 9 * * *';
 const TZ = 'Europe/Istanbul';
 
 export async function sendDailyReminders(): Promise<{ sent: number; failed: number }> {
