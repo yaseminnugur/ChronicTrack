@@ -22,14 +22,18 @@ app.get('/', (req, res) => {
 import authRoutes from './routes/authRoutes.ts';
 import onboardingRoutes from './routes/onboardingRoutes.ts';
 import healthRoutes from './routes/healthRoutes.ts';
+import notificationRoutes from './routes/notificationRoutes.ts';
+import { startDailyReminderCron } from './services/dailyReminderJob.ts';
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/health', healthRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  startDailyReminderCron();
 });

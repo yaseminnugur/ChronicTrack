@@ -24,6 +24,7 @@ model User {
   activityLevel String?
   saltLevel          String?
   chronicConditions  String?   // Comma-separated: "Diyabet,Tansiyon" or "Hiçbiri"
+  pushToken          String?   // Expo push token for daily reminder notifications
   createdAt          DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

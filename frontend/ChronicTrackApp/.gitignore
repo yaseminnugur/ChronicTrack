@@ -18,6 +18,11 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase
+# google-services.json: client config, bundled into APK — safe to commit
+# Only the admin SDK service account is sensitive:
+*-firebase-adminsdk-*.json
+
 # Metro
 .metro-health-check*
 

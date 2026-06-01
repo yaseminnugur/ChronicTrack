@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { syncPushTokenWithBackend, clearPushTokenOnBackend } from '../services/notificationService';
 
 type AuthContextType = {
   userToken: string | null;
@@ -32,6 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const onboardStatus = await AsyncStorage.getItem('isOnboarded');
         setUserToken(token);
         setIsOnboarded(onboardStatus === 'true');
+        if (token) {
+          syncPushTokenWithBackend();
+        }
       } catch (e) {
         console.error('Failed to load token', e);
       } finally {
@@ -48,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem('isOnboarded', onboarded ? 'true' : 'false');
       setUserToken(token);
       setIsOnboarded(onboarded);
+      syncPushTokenWithBackend();
     } catch (e) {
       console.error('Failed to save token', e);
     }
@@ -55,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      await clearPushTokenOnBackend();
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('isOnboarded');
       setUserToken(null);
