@@ -94,6 +94,7 @@ export default function AnalysisView({ analysisType, dataVersion = 0 }: Analysis
   const risk = deterministic.riskLevel as RiskLevel;
   const trend = deterministic.trend as string;
   const trendDelta = deterministic.trendDeltaPct as number | null;
+  const criticalEventBanner = buildCriticalEventBanner(analysisType, deterministic);
 
   return (
     <View style={styles.container}>
@@ -139,6 +140,29 @@ export default function AnalysisView({ analysisType, dataVersion = 0 }: Analysis
           </ThemedText>
           <View style={[styles.riskDot, { backgroundColor: riskColor(risk) }]} />
         </View>
+
+        <ThemedText style={styles.scopeSubtitle}>
+          Son {deterministic.windowDays} günün özeti
+        </ThemedText>
+
+        {criticalEventBanner && (
+          <View style={[styles.eventBanner, { backgroundColor: criticalEventBanner.bg }]}>
+            <Ionicons
+              name={criticalEventBanner.icon}
+              size={14}
+              color={criticalEventBanner.fg}
+              style={{ marginRight: 8 }}
+            />
+            <View style={{ flex: 1 }}>
+              <ThemedText style={[styles.eventBannerTitle, { color: criticalEventBanner.fg }]}>
+                {criticalEventBanner.title}
+              </ThemedText>
+              <ThemedText style={[styles.eventBannerDetail, { color: criticalEventBanner.fg }]}>
+                {criticalEventBanner.detail}
+              </ThemedText>
+            </View>
+          </View>
+        )}
 
         <ThemedText style={styles.riskDescription}>{ai.summary}</ThemedText>
 
@@ -280,6 +304,86 @@ function renderMiniCards(
       </View>
     </>
   );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Critical event banner
+interface CriticalEventBanner {
+  title: string;
+  detail: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  bg: string;
+  fg: string;
+}
+
+interface ResolvedEvent {
+  count: number;
+  lastValue: number;
+  lastOccurredAt: string;
+  resolved: boolean;
+  stableReadingsSince: number;
+}
+
+function buildCriticalEventBanner(
+  type: 'BLOOD_SUGAR' | 'BLOOD_PRESSURE',
+  deterministic: any
+): CriticalEventBanner | null {
+  const events = deterministic?.criticalEvents;
+  if (!events) return null;
+
+  let event: ResolvedEvent | null = null;
+  let kind: 'hyper' | 'hypo' | 'crisis' | null = null;
+  if (type === 'BLOOD_SUGAR') {
+    if (events.severeHyperglycemia) {
+      event = events.severeHyperglycemia;
+      kind = 'hyper';
+    } else if (events.frequentHypo) {
+      event = events.frequentHypo;
+      kind = 'hypo';
+    }
+  } else if (type === 'BLOOD_PRESSURE' && events.hypertensiveCrisis) {
+    event = events.hypertensiveCrisis;
+    kind = 'crisis';
+  }
+  if (!event || !kind) return null;
+
+  const ago = formatTurkishAgo(event.lastOccurredAt);
+  const valueUnit = kind === 'crisis' ? 'mmHg sistolik' : 'mg/dL';
+  const eventName =
+    kind === 'hyper' ? 'şiddetli hiperglisemi' :
+    kind === 'hypo' ? 'tekrarlayan hipoglisemi' :
+    'hipertansif kriz';
+
+  if (event.resolved) {
+    return {
+      title: 'Geçmiş kritik olay — toparlandı',
+      detail: `${ago} ${event.lastValue} ${valueUnit} ile ${eventName} kaydedildi. Ardından ${event.stableReadingsSince} normal ölçüm var.`,
+      icon: 'checkmark-circle',
+      bg: '#DCFCE7',
+      fg: '#166534',
+    };
+  }
+  return {
+    title: 'Aktif kritik olay',
+    detail: `${ago} ${event.lastValue} ${valueUnit} kaydedildi. Toparlanma için ardışık normal ölçümler beklenir.`,
+    icon: 'warning',
+    bg: '#FEE2E2',
+    fg: '#991B1B',
+  };
+}
+
+function formatTurkishAgo(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
+  if (mins < 1) return 'Az önce';
+  if (mins < 60) return `${mins} dk önce`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} sa önce`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} gün önce`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks} hafta önce`;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -445,7 +549,14 @@ const createStyles = (c: ColorPalette) => StyleSheet.create({
   riskLevelRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
+    marginBottom: 4,
+  },
+  scopeSubtitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: c.textTertiary,
     marginBottom: 16,
+    letterSpacing: 0.2,
   },
   riskLevelText: {
     fontSize: 44,
@@ -464,6 +575,25 @@ const createStyles = (c: ColorPalette) => StyleSheet.create({
     color: c.textSecondary,
     lineHeight: 20,
     marginBottom: 20,
+  },
+  eventBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  eventBannerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
+    marginBottom: 2,
+  },
+  eventBannerDetail: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
   },
   miniCardsRow: {
     flexDirection: 'row',

@@ -1,11 +1,11 @@
 import { api } from './api';
 
-export const saveBloodSugar = async (data: { glucose: string; mealState?: string; notes?: string }) => {
+export const saveBloodSugar = async (data: { glucose: string; mealState?: string; notes?: string; measuredAt?: string }) => {
   const response = await api.post('/health/blood-sugar', data);
   return response.data;
 };
 
-export const saveBloodPressure = async (data: { systolic: string; diastolic: string; pulse: string; notes?: string }) => {
+export const saveBloodPressure = async (data: { systolic: string; diastolic: string; pulse: string; notes?: string; measuredAt?: string }) => {
   const response = await api.post('/health/blood-pressure', data);
   return response.data;
 };

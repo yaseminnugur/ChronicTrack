@@ -7,6 +7,18 @@ import { validateBloodSugarInput, validateBloodPressureInput } from '../utils/he
 // ile uyumlu olmak zorunda. Yeni seçenek eklenirse hepsi güncellenmeli.
 const ALLOWED_MEAL_STATES = ['Yemek Öncesi', 'Yemek Sonrası', 'Uyku Öncesi', 'Açlık'];
 
+// Kullanıcı geçmiş tarihli ölçüm girebilsin (örn. dün sabah aldığı tansiyonu bugün ekliyor).
+// Geçersiz veya gelecek tarihler reddedilir.
+function parseMeasuredAt(raw: unknown): Date | null | 'invalid' {
+  if (raw == null || raw === '') return null; // alan yoksa default (now) kullanılır
+  if (typeof raw !== 'string') return 'invalid';
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return 'invalid';
+  // Saatlik tolerans bırakıyoruz: cihaz saatleri farkı olabilir
+  if (d.getTime() > Date.now() + 60 * 60 * 1000) return 'invalid';
+  return d;
+}
+
 export const addBloodSugar = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -14,7 +26,7 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
       res.status(401).json({ error: 'Yetki reddedildi' });
       return;
     }
-    const { glucose, mealState, notes } = req.body;
+    const { glucose, mealState, notes, measuredAt } = req.body;
 
     if (!glucose || !isValidNumber(glucose)) {
       res.status(400).json({ error: 'Geçerli bir glikoz değeri girin.' });
@@ -39,12 +51,19 @@ export const addBloodSugar = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const parsedMeasuredAt = parseMeasuredAt(measuredAt);
+    if (parsedMeasuredAt === 'invalid') {
+      res.status(400).json({ error: 'Ölçüm tarihi geçersiz.' });
+      return;
+    }
+
     const record = await prisma.bloodSugar.create({
       data: {
         userId,
         glucose: safeParseFloat(glucose),
         mealState,
         notes: notes || '',
+        ...(parsedMeasuredAt ? { measuredAt: parsedMeasuredAt } : {}),
       }
     });
 
@@ -64,7 +83,7 @@ export const addBloodPressure = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const { systolic, diastolic, pulse, notes } = req.body;
+    const { systolic, diastolic, pulse, notes, measuredAt } = req.body;
 
     if (!systolic || !diastolic) {
       res.status(400).json({ error: 'Sistolik ve diyastolik değerleri zorunludur.' });
@@ -81,6 +100,12 @@ export const addBloodPressure = async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    const parsedMeasuredAt = parseMeasuredAt(measuredAt);
+    if (parsedMeasuredAt === 'invalid') {
+      res.status(400).json({ error: 'Ölçüm tarihi geçersiz.' });
+      return;
+    }
+
     const record = await prisma.bloodPressure.create({
       data: {
         userId,
@@ -88,6 +113,7 @@ export const addBloodPressure = async (req: Request, res: Response): Promise<voi
         diastolic: safeParseInt(diastolic),
         pulse: pulse ? safeParseInt(pulse) : 0,
         notes: notes || '',
+        ...(parsedMeasuredAt ? { measuredAt: parsedMeasuredAt } : {}),
       }
     });
 

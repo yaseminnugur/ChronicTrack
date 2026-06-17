@@ -22,7 +22,14 @@ export interface AnalysisResult {
   generatedAt: Date;
   fromCache: boolean;
   cacheReason?: 'unchanged' | 'no_data';
-  refreshReason?: 'no_previous' | 'risk_changed' | 'trend_changed' | 'signals_changed' | 'stale' | 'forced';
+  refreshReason?:
+    | 'no_previous'
+    | 'risk_changed'
+    | 'trend_changed'
+    | 'signals_changed'
+    | 'new_measurements'
+    | 'stale'
+    | 'forced';
   deterministic: DeterministicAnalysis;
   ai: AINarrative;
 }
@@ -65,7 +72,7 @@ export async function getOrGenerateAnalysis(
     orderBy: { createdAt: 'desc' },
   });
 
-  const refreshDecision = decideRefresh(last, deterministic, !!options.force);
+  const refreshDecision = await decideRefresh(userId, type, last, deterministic, !!options.force);
 
   if (!refreshDecision.refresh && last) {
     return {
@@ -152,8 +159,10 @@ async function computeDeterministicWithContext(
   type: AnalysisType,
   profile: UserProfileSummary
 ): Promise<{ deterministic: DeterministicAnalysis; recentNotes: RecentNote[] }> {
-  // 2x window al ki trend için önceki periyodu hesaplayabilelim
-  const windowDays = 30;
+  // 2x window al ki trend için önceki periyodu hesaplayabilelim.
+  // 7 gün analiz penceresi → 14 günlük veri çekilir (current + previous).
+  // Analyzer'lardaki DEFAULT_WINDOW_DAYS ile eşleşmeli.
+  const windowDays = 7;
   const since = new Date(Date.now() - 2 * windowDays * 24 * 60 * 60 * 1000);
 
   if (type === 'BLOOD_SUGAR') {
@@ -226,11 +235,13 @@ function toIsoDate(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
-function decideRefresh(
+async function decideRefresh(
+  userId: string,
+  type: AnalysisType,
   last: { createdAt: Date; status: string; aiSummary: string } | null,
   current: DeterministicAnalysis,
   forced: boolean
-): { refresh: boolean; reason?: AnalysisResult['refreshReason'] } {
+): Promise<{ refresh: boolean; reason?: AnalysisResult['refreshReason'] }> {
   if (forced) return { refresh: true, reason: 'forced' };
   if (!last) return { refresh: true, reason: 'no_previous' };
 
@@ -240,22 +251,54 @@ function decideRefresh(
   // Risk seviyesi değişti mi?
   if (last.status !== current.riskLevel) return { refresh: true, reason: 'risk_changed' };
 
-  // Eski narrative'den trend ve signals çek (serialize'da sakladık)
-  const previousSnapshot = parseDeterministicSnapshot(last.aiSummary);
-  if (previousSnapshot) {
-    if (previousSnapshot.trend !== current.trend) return { refresh: true, reason: 'trend_changed' };
-    if (signalsChanged(previousSnapshot.signals, current.signals))
-      return { refresh: true, reason: 'signals_changed' };
+  // Son analizden sonra yeni ölçüm eklendi mi?
+  // Bu kontrol kritik: analiz penceresinde yapışkan sinyaller (severe_hyperglycemia,
+  // frequent_hypo) nedeniyle riskLevel CRITICAL kalmaya devam edebilir. Yeni normal
+  // ölçümler girildiğinde bile risk düşmediği için AI özeti güncellenmez. Yeni
+  // ölçüm timestamp'ı son analizden büyükse cache'i invalide ederiz.
+  const latestMeasurementAt = await getLatestMeasurementTime(userId, type);
+  if (latestMeasurementAt && latestMeasurementAt > last.createdAt) {
+    return { refresh: true, reason: 'new_measurements' };
   }
 
   return { refresh: false };
 }
 
-function signalsChanged(prev: string[], curr: string[]): boolean {
-  if (prev.length !== curr.length) return true;
-  const a = [...prev].sort();
-  const b = [...curr].sort();
-  return a.some((v, i) => v !== b[i]);
+async function getLatestMeasurementTime(
+  userId: string,
+  type: AnalysisType
+): Promise<Date | null> {
+  if (type === 'BLOOD_SUGAR') {
+    const latest = await prisma.bloodSugar.findFirst({
+      where: { userId },
+      orderBy: { measuredAt: 'desc' },
+      select: { measuredAt: true },
+    });
+    return latest?.measuredAt ?? null;
+  }
+  // BLOOD_PRESSURE: hem normal kayıtları hem onboarding'i kapsa
+  const [latestBp, onboarding] = await Promise.all([
+    prisma.bloodPressure.findFirst({
+      where: { userId },
+      orderBy: { measuredAt: 'desc' },
+      select: { measuredAt: true },
+    }),
+    prisma.onboardingData.findUnique({
+      where: { userId },
+      select: { createdAt: true, bloodPressureData: true },
+    }),
+  ]);
+  const candidates: Date[] = [];
+  if (latestBp?.measuredAt) candidates.push(latestBp.measuredAt);
+  if (
+    onboarding?.bloodPressureData &&
+    Array.isArray(onboarding.bloodPressureData) &&
+    (onboarding.bloodPressureData as any[]).length > 0
+  ) {
+    candidates.push(onboarding.createdAt);
+  }
+  if (candidates.length === 0) return null;
+  return new Date(Math.max(...candidates.map((d) => d.getTime())));
 }
 
 async function generateAINarrative(
@@ -276,6 +319,7 @@ KURALLAR:
 5. Risk LOW/MEDIUM için doctorAdvice null bırakılabilir.
 6. recentNotes alanı kullanıcının ölçümlerine yazdığı serbest notları içerir. Bu notlar kişisel BAĞLAM sağlar (örn. "spor sonrası", "stres altındaydım", "ağır karbonhidrat"). Önerilerinde bu bağlamı kullan ve gerektiğinde özette atıfta bulun ("Spor sonrası ölçümlerinizin yüksek seyrettiği görülüyor" gibi). Ancak deterministicAnalysis öncelikli karar verici; notlar yalnızca renk katar, risk seviyesini değiştirmez.
 6a. KAN ŞEKERİ ÖZEL DURUM: deterministicAnalysis.hba1c değeri varsa (3 aylık ortalama göstergesi), bunu özetinde anlamlandır. category alanına göre (normal/prediabetes/controlled/suboptimal/poor) durumu açıkla. Eğer signals içinde "hba1c_only_baseline" varsa, bu kullanıcının henüz günlük ölçüm girmediği anlamına gelir — özetinde sadece HbA1c bazında bilgi ver, "günlük ölçüm girdikçe daha detaylı analiz sunabileceğimizi" ekle, önerilerin de düzenli ölçüm alışkanlığı + HbA1c kategorisine göre yaşam tarzı olsun.
+6b. KRİTİK OLAY TOPARLANMASI: deterministicAnalysis.criticalEvents alanında *_resolved (severeHyperglycemia.resolved=true / frequentHypo.resolved=true / hypertensiveCrisis.resolved=true) gördüğün anda bu, "geçmişte kritik bir değer vardı ancak ardışık normal ölçümlerle toparlanma sağlandı" anlamına gelir. Özetinde MUTLAKA bu bağlamı ver. ÇOK ÖNEMLİ — ZAMAN İFADESİ KURALI: Asla "X dk önce / X saat önce / X gün önce / X hafta önce / dün / bugün / yakın zamanda / önceki gün" gibi SPESİFİK ZAMAN ifadeleri kullanma. lastOccurredAt veya lastOccurredAgo alanlarına BAKMA, onlardan zaman türetme. Bu yasaklı çünkü kullanıcı arayüzü zaman bilgisini ayrı bir alanda zaten gösteriyor; senin tekrarlaman çelişkili sonuçlara yol açıyor. Bunun yerine olaya değer + tip üzerinden atıfta bulun. ÖRNEK CÜMLE YAPISI (zaman içermeyen): "Kayıtlarınızda [lastValue] [birim] değerinde bir [hiperglisemi/hipoglisemi/hipertansif kriz] olayı yer alıyor. Ardından gelen [stableReadingsSince] normal aralıkta ölçüm toparlanmanın sağlandığını gösteriyor. İzlemenizi sürdürmenizi öneririz." doctorAdvice'ı bu durumda zorunlu yapma; HIGH risk ise standart "doktorunuzla görüşmenizi öneririz" yeterli. *_resolved sinyali aktif bir kritik durum DEĞİLDİR.
 7. Notlardaki kişisel bilgileri (isim, adres) ASLA tekrar etme. Sadece sağlıkla ilgili bağlamı kullan.
 8. Notlardaki belirsiz/anlamsız ifadeleri (örn. "asdasd") yok say.
 9. Yanıt SADECE şu JSON şemasında olmalı:
@@ -287,12 +331,19 @@ KURALLAR:
   "doctorAdvice": "metin veya null"
 }
 10. recommendations en fazla 3 madde olsun, kullanıcı profili (yaş, BMI, sigara, aktivite, tuz tüketimi) ve varsa notlardaki bağlamla bağlantılı olsun.
-11. Türkçe konuş, samimi ama profesyonel ton. Emoji kullanma.`;
+11. Türkçe konuş, samimi ama profesyonel ton. Emoji kullanma.
+12. ANALİZ PENCERESİ: deterministicAnalysis.windowDays alanı analizin kapsadığı gün sayısıdır (şu an 7). Eğer özetinde süreden bahsedeceksen sabit "30 gün", "1 ay" gibi rakamlar yazma — kaç gün olduğunu windowDays'ten oku ve "son 7 gün" gibi tutarlı kullan. Mümkünse spesifik sayı yerine "son haftanız", "son ölçümleriniz", "kayıtlarınız" gibi süre belirtmeyen ifadeleri tercih et; bu, pencere boyutu ileride değişirse bile metnin doğru kalmasını sağlar.`;
+
+  // AI o anki tarihi güvenilir şekilde bilmediği ve narrative önbelleğe
+  // alındığı için herhangi bir "X dk önce" ifadesi banner ile çelişebilir.
+  // Çözüm: AI'a hiç zaman bilgisi (lastOccurredAt vb.) göstermiyoruz; banner
+  // zamanı kendisi gösteriyor, AI sadece değer + bağlam üzerinden konuşacak.
+  const sanitized = stripTimestampsForAI(deterministic);
 
   const userPrompt = JSON.stringify(
     {
       profile,
-      deterministicAnalysis: deterministic,
+      deterministicAnalysis: sanitized,
       recentNotes,
     },
     null,
@@ -358,14 +409,32 @@ function parseStoredAI(aiSummary: string, recommendation: string): AINarrative {
   return { summary, recommendations: recs, doctorAdvice };
 }
 
-// Snapshot'ı aiSummary kolonunda saklamıyoruz çünkü orası kullanıcı metni.
-// Cache kararı için deterministic'in bir snapshot'ını ayrı tutmak gerekirdi
-// ama HealthAnalysis şemasında ek alan yok. Geçici çözüm: status (riskLevel) yeterli,
-// trend/signals değişimi için yeniden hesaplama bunu yakalar.
-function parseDeterministicSnapshot(_aiSummary: string): { trend: string; signals: string[] } | null {
-  // Şu an snapshot saklamıyoruz; trend/signals değişimi için DB şeması genişletilmedi.
-  // riskLevel değişimi + STALE_DAYS yeterli kapsama sağlar.
-  return null;
+/**
+ * AI prompt'una gönderilecek deterministic analizden zaman damgalarını
+ * çıkarır. Amaç: AI'ın "X dk önce" gibi banner ile çelişen ifadeler
+ * üretmesini önlemek. Banner zamanı kendisi gösterir.
+ */
+function stripTimestampsForAI(d: DeterministicAnalysis): DeterministicAnalysis {
+  const stripEvent = (e: any) => {
+    if (!e) return null;
+    const { lastOccurredAt: _ignored, ...rest } = e;
+    return rest;
+  };
+  if (d.type === 'BLOOD_SUGAR') {
+    return {
+      ...d,
+      criticalEvents: {
+        severeHyperglycemia: stripEvent(d.criticalEvents.severeHyperglycemia),
+        frequentHypo: stripEvent(d.criticalEvents.frequentHypo),
+      },
+    };
+  }
+  return {
+    ...d,
+    criticalEvents: {
+      hypertensiveCrisis: stripEvent(d.criticalEvents.hypertensiveCrisis),
+    },
+  };
 }
 
 function deterministicScore(d: DeterministicAnalysis): number {

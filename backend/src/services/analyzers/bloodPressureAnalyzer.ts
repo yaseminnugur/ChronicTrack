@@ -1,8 +1,10 @@
 import type {
   BloodPressureAnalysis,
+  BloodPressureCriticalEvents,
   BloodPressurePatterns,
   BloodPressureStats,
   BPClassification,
+  ResolvedCriticalEvent,
   RiskLevel,
   TrendDirection,
   UserProfileSummary,
@@ -15,7 +17,14 @@ interface BloodPressureRecord {
   measuredAt: Date;
 }
 
-const DEFAULT_WINDOW_DAYS = 30;
+// Analiz penceresi: kullanıcının son durumunu doğru yansıtması için 7 gün.
+// Trend için (önceki periyot) 7 gün daha geri bakılır → toplam 14 günlük veri ihtiyacı.
+const DEFAULT_WINDOW_DAYS = 7;
+const CRISIS_SYS = 180;
+const CRISIS_DIA = 120;
+// Hipertansif kriz sonrası "toparlandı" sayılması için ardışık olarak gelmesi
+// gereken stage2/crisis OLMAYAN ölçüm sayısı (yani <140 sys ve <90 dia).
+const STABLE_READINGS_REQUIRED = 3;
 
 export function analyzeBloodPressure(
   records: BloodPressureRecord[],
@@ -35,12 +44,20 @@ export function analyzeBloodPressure(
   const trend = computeTrend(current, previous);
   const trendDeltaPct = computeTrendDelta(current, previous);
 
+  const criticalEvents = computeCriticalEvents(current);
+
   const signals: string[] = [];
   if (patterns.morningHypertension) signals.push('morning_hypertension');
   if (stats.pulsePressureAvg != null && stats.pulsePressureAvg > 60) signals.push('wide_pulse_pressure');
   if (stats.avgPulse != null && stats.avgPulse > 100) signals.push('tachycardia');
   if (stats.avgPulse != null && stats.avgPulse < 50) signals.push('bradycardia');
-  if (classification.crisis > 0) signals.push('hypertensive_crisis');
+  if (criticalEvents.hypertensiveCrisis) {
+    signals.push(
+      criticalEvents.hypertensiveCrisis.resolved
+        ? 'hypertensive_crisis_resolved'
+        : 'hypertensive_crisis'
+    );
+  }
   if (profile.isSmoking && classification.dominantCategory !== 'normal') signals.push('smoking_with_hypertension');
   if (profile.saltLevel === 'Yüksek' && classification.dominantCategory !== 'normal') signals.push('high_salt_with_hypertension');
 
@@ -57,7 +74,41 @@ export function analyzeBloodPressure(
     classification,
     patterns,
     signals,
+    criticalEvents,
   };
+}
+
+/**
+ * Pencerede yaşanan hipertansif kriz olaylarını "anlık" veya "toparlanmış"
+ * olarak sınıflandırır. En son krizden sonra STABLE_READINGS_REQUIRED kadar
+ * ardışık stage2/crisis OLMAYAN ölçüm geldiyse olay resolved sayılır.
+ */
+function computeCriticalEvents(records: BloodPressureRecord[]): BloodPressureCriticalEvents {
+  const asc = [...records].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+  const crisisIndices: number[] = [];
+  asc.forEach((r, i) => {
+    if (r.systolic >= CRISIS_SYS || r.diastolic >= CRISIS_DIA) crisisIndices.push(i);
+  });
+  if (crisisIndices.length === 0) {
+    return { hypertensiveCrisis: null };
+  }
+  const lastIdx = crisisIndices[crisisIndices.length - 1];
+  const last = asc[lastIdx];
+  let stableSince = 0;
+  for (let i = lastIdx + 1; i < asc.length; i++) {
+    const r = asc[i];
+    // "Stabil" = ne stage2 ne crisis (sys < 140 ve dia < 90)
+    if (r.systolic < 140 && r.diastolic < 90) stableSince++;
+    else break;
+  }
+  const event: ResolvedCriticalEvent = {
+    count: crisisIndices.length,
+    lastValue: last.systolic, // gösterim için sistolik değeri saklıyoruz
+    lastOccurredAt: last.measuredAt.toISOString(),
+    resolved: stableSince >= STABLE_READINGS_REQUIRED,
+    stableReadingsSince: stableSince,
+  };
+  return { hypertensiveCrisis: event };
 }
 
 function computeStats(records: BloodPressureRecord[]): BloodPressureStats {
@@ -156,13 +207,26 @@ function computeTrendDelta(current: BloodPressureRecord[], previous: BloodPressu
 }
 
 function computeRisk(classification: BPClassification, signals: string[]): RiskLevel {
+  // Aktif (henüz toparlanmamış) kriz CRITICAL'ı tetikler
   if (signals.includes('hypertensive_crisis')) return 'CRITICAL';
-  if (classification.dominantCategory === 'stage2' || classification.stage2 > 0) return 'HIGH';
-  if (signals.includes('morning_hypertension') || signals.includes('wide_pulse_pressure')) return 'HIGH';
-  if (classification.dominantCategory === 'stage1') return 'MEDIUM';
-  if (signals.includes('smoking_with_hypertension') || signals.includes('high_salt_with_hypertension')) return 'MEDIUM';
-  if (classification.dominantCategory === 'elevated') return 'MEDIUM';
-  return 'LOW';
+
+  let risk: RiskLevel = 'LOW';
+  if (classification.dominantCategory === 'stage2' || classification.stage2 > 0) risk = 'HIGH';
+  if (signals.includes('morning_hypertension') || signals.includes('wide_pulse_pressure')) risk = max(risk, 'HIGH');
+  if (classification.dominantCategory === 'stage1') risk = max(risk, 'MEDIUM');
+  if (signals.includes('smoking_with_hypertension') || signals.includes('high_salt_with_hypertension'))
+    risk = max(risk, 'MEDIUM');
+  if (classification.dominantCategory === 'elevated') risk = max(risk, 'MEDIUM');
+
+  // Toparlanmış kriz tamamen göz ardı edilmemeli — risk en az HIGH kalır.
+  if (signals.includes('hypertensive_crisis_resolved')) risk = max(risk, 'HIGH');
+
+  return risk;
+}
+
+const RISK_ORDER: Record<RiskLevel, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
+function max(a: RiskLevel, b: RiskLevel): RiskLevel {
+  return RISK_ORDER[a] >= RISK_ORDER[b] ? a : b;
 }
 
 function mean(arr: number[]): number {

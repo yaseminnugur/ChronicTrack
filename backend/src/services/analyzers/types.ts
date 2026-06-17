@@ -53,6 +53,24 @@ export interface Hba1cAssessment {
   estimatedAvgGlucose: number;  // ADA eAG formülü (mg/dL)
 }
 
+/**
+ * Geçmişte yaşanmış kritik bir olayın o anki "çözüldü" durumunu temsil eder.
+ * Olay penceredeyse `count > 0`; ardından ≥ `stableReadingsRequired` ardışık
+ * in-range ölçüm geldiyse `resolved = true` ve risk seviyesi düşürülebilir.
+ */
+export interface ResolvedCriticalEvent {
+  count: number;                  // pencerede toplam olay sayısı
+  lastValue: number;              // en son olayın değeri (ör. 600 mg/dL veya 195 sys)
+  lastOccurredAt: string;         // en son olayın ISO timestamp'i
+  resolved: boolean;              // ≥N ardışık in-range ölçüm sonrası true
+  stableReadingsSince: number;    // en son kritik olaydan bu yana ardışık in-range ölçüm sayısı
+}
+
+export interface BloodSugarCriticalEvents {
+  severeHyperglycemia: ResolvedCriticalEvent | null;  // > 250
+  frequentHypo: ResolvedCriticalEvent | null;          // < 70 (sayı >= 2)
+}
+
 export interface BloodSugarAnalysis {
   type: 'BLOOD_SUGAR';
   windowDays: number;
@@ -63,9 +81,10 @@ export interface BloodSugarAnalysis {
   trendDeltaPct: number | null;   // önceki dönemle karşılaştırma yüzdesi
   stats: BloodSugarStats;
   patterns: BloodSugarPatterns;
-  signals: string[];              // 'frequent_hypo' | 'post_meal_spike' | 'high_variability' | 'severe_hyperglycemia' | 'hba1c_mismatch' | 'hba1c_only_baseline' | vb.
+  signals: string[];              // 'frequent_hypo' | 'frequent_hypo_resolved' | 'post_meal_spike' | 'high_variability' | 'severe_hyperglycemia' | 'severe_hyperglycemia_resolved' | 'hba1c_mismatch' | 'hba1c_only_baseline' | vb.
   hba1c: Hba1cAssessment | null;  // HbA1c değeri varsa sınıflandırması
   hba1cMismatch: { reportedHba1c: number; estimatedFromAvg: number; gapPct: number } | null;
+  criticalEvents: BloodSugarCriticalEvents;
 }
 
 export interface BloodPressureStats {
@@ -92,6 +111,10 @@ export interface BloodPressurePatterns {
   morningHypertension: boolean;
 }
 
+export interface BloodPressureCriticalEvents {
+  hypertensiveCrisis: ResolvedCriticalEvent | null;  // sys >= 180 veya dia >= 120
+}
+
 export interface BloodPressureAnalysis {
   type: 'BLOOD_PRESSURE';
   windowDays: number;
@@ -102,7 +125,8 @@ export interface BloodPressureAnalysis {
   stats: BloodPressureStats;
   classification: BPClassification;
   patterns: BloodPressurePatterns;
-  signals: string[];   // 'morning_hypertension' | 'wide_pulse_pressure' | 'tachycardia' | 'bradycardia' | 'hypertensive_crisis' | vb.
+  signals: string[];   // 'morning_hypertension' | 'wide_pulse_pressure' | 'tachycardia' | 'bradycardia' | 'hypertensive_crisis' | 'hypertensive_crisis_resolved' | vb.
+  criticalEvents: BloodPressureCriticalEvents;
 }
 
 export type DeterministicAnalysis = BloodSugarAnalysis | BloodPressureAnalysis;

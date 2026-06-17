@@ -1,9 +1,11 @@
 import type {
   BloodSugarAnalysis,
+  BloodSugarCriticalEvents,
   BloodSugarPatterns,
   BloodSugarStats,
   Hba1cAssessment,
   Hba1cCategory,
+  ResolvedCriticalEvent,
   RiskLevel,
   TrendDirection,
   UserProfileSummary,
@@ -15,9 +17,20 @@ interface BloodSugarRecord {
   measuredAt: Date;
 }
 
-const DEFAULT_WINDOW_DAYS = 30;
+// Analiz penceresi: kullanıcının son durumunu doğru yansıtması için 7 gün.
+// Trend için (önceki periyot) 7 gün daha geri bakılır → toplam 14 günlük veri ihtiyacı.
+// Önceden 30 gün idi; tek bir eski kötü ölçümün haftalarca "yapışkan" kalmasına yol açıyordu.
+const DEFAULT_WINDOW_DAYS = 7;
 const FASTING_STATES = ['Açlık', 'Yemek Öncesi', 'Uyku Öncesi'];
 const POSTPRANDIAL_STATE = 'Yemek Sonrası';
+const SEVERE_HYPER_THRESHOLD = 250;
+const HYPO_THRESHOLD = 70;
+const IN_RANGE_MIN = 70;
+const IN_RANGE_MAX = 180;
+// Bir kritik olayın "çözüldü" sayılması için olaydan sonra gelmesi gereken
+// ardışık in-range (70-180) ölçüm sayısı. 3 mantıklı bir minimum: 1 ölçüm
+// rastlantısal olabilir, 2 hâlâ kısa, 3 toparlanmanın tutarlı olduğunu gösterir.
+const STABLE_READINGS_REQUIRED = 3;
 
 export function analyzeBloodSugar(
   records: BloodSugarRecord[],
@@ -36,11 +49,21 @@ export function analyzeBloodSugar(
   const trend = computeTrend(current, previous);
   const trendDeltaPct = computeTrendDelta(current, previous);
 
+  const criticalEvents = computeCriticalEvents(current);
+
   const signals: string[] = [];
-  if (stats.hypoCount >= 2) signals.push('frequent_hypo');
+  if (criticalEvents.frequentHypo) {
+    signals.push(criticalEvents.frequentHypo.resolved ? 'frequent_hypo_resolved' : 'frequent_hypo');
+  }
+  if (criticalEvents.severeHyperglycemia) {
+    signals.push(
+      criticalEvents.severeHyperglycemia.resolved
+        ? 'severe_hyperglycemia_resolved'
+        : 'severe_hyperglycemia'
+    );
+  }
   if (patterns.postMealSpike != null && patterns.postMealSpike > 60) signals.push('post_meal_spike');
   if (stats.stdDev != null && stats.stdDev > 50) signals.push('high_variability');
-  if (stats.severeHyperCount >= 1) signals.push('severe_hyperglycemia');
   if (stats.inRangePct != null && stats.inRangePct < 50) signals.push('low_time_in_range');
 
   // HbA1c değerlendirmesi (varsa)
@@ -87,6 +110,57 @@ export function analyzeBloodSugar(
     signals,
     hba1c,
     hba1cMismatch,
+    criticalEvents,
+  };
+}
+
+/**
+ * Analiz penceresinde yaşanan kritik olayları (severe_hyperglycemia, frequent_hypo)
+ * "anlık" veya "toparlanmış" olarak sınıflandırır. En son kritik olaydan sonra
+ * STABLE_READINGS_REQUIRED kadar ardışık in-range ölçüm geldiyse olay "resolved"
+ * sayılır ve risk seviyesi CRITICAL'da yapışmaz.
+ */
+function computeCriticalEvents(records: BloodSugarRecord[]): BloodSugarCriticalEvents {
+  // ASC sıralama: en eski → en yeni. Kritik olaydan sonraki ölçümleri saymak için.
+  const asc = [...records].sort((a, b) => a.measuredAt.getTime() - b.measuredAt.getTime());
+
+  const severeIndices: number[] = [];
+  const hypoIndices: number[] = [];
+  asc.forEach((r, i) => {
+    if (r.glucose > SEVERE_HYPER_THRESHOLD) severeIndices.push(i);
+    if (r.glucose < HYPO_THRESHOLD) hypoIndices.push(i);
+  });
+
+  return {
+    severeHyperglycemia: severeIndices.length > 0
+      ? buildResolvedEvent(asc, severeIndices)
+      : null,
+    frequentHypo: hypoIndices.length >= 2
+      ? buildResolvedEvent(asc, hypoIndices)
+      : null,
+  };
+}
+
+function buildResolvedEvent(
+  asc: BloodSugarRecord[],
+  eventIndices: number[]
+): ResolvedCriticalEvent {
+  const lastIdx = eventIndices[eventIndices.length - 1];
+  const last = asc[lastIdx];
+  // Son olaydan sonraki ardışık in-range ölçüm sayısı.
+  // İlk in-range olmayan ölçümde sayım durur — "stable streak" mantığı.
+  let stableSince = 0;
+  for (let i = lastIdx + 1; i < asc.length; i++) {
+    const g = asc[i].glucose;
+    if (g >= IN_RANGE_MIN && g <= IN_RANGE_MAX) stableSince++;
+    else break;
+  }
+  return {
+    count: eventIndices.length,
+    lastValue: last.glucose,
+    lastOccurredAt: last.measuredAt.toISOString(),
+    resolved: stableSince >= STABLE_READINGS_REQUIRED,
+    stableReadingsSince: stableSince,
   };
 }
 
@@ -186,7 +260,7 @@ function computeRisk(
   signals: string[],
   hba1c: Hba1cAssessment | null
 ): RiskLevel {
-  // Günlük ölçüm bazlı kritik sinyaller her zaman önceliklidir
+  // Aktif (henüz toparlanmamış) kritik sinyaller her zaman önceliklidir
   if (signals.includes('severe_hyperglycemia') || signals.includes('frequent_hypo')) return 'CRITICAL';
 
   // Hiç günlük ölçüm yoksa risk yalnızca HbA1c'den hesaplanır
@@ -207,6 +281,15 @@ function computeRisk(
   if (signals.includes('low_time_in_range') || signals.includes('post_meal_spike')) risk = max(risk, 'HIGH');
   if (signals.includes('high_variability') || signals.includes('hba1c_mismatch')) risk = max(risk, 'MEDIUM');
   if (stats.avg != null && stats.avg > 140) risk = max(risk, 'MEDIUM');
+
+  // Toparlanmış kritik olaylar tamamen göz ardı edilmemeli — risk en az HIGH kalır.
+  // Bu, "son haftada 600 vardı ama şu an iyi" durumunu medikal açıdan gerçekçi yansıtır.
+  if (
+    signals.includes('severe_hyperglycemia_resolved') ||
+    signals.includes('frequent_hypo_resolved')
+  ) {
+    risk = max(risk, 'HIGH');
+  }
 
   if (hba1c) {
     const hba1cRisk: RiskLevel =

@@ -46,6 +46,7 @@ export default function AddBloodPressureScreen() {
           diastolic: dia,
           pulse: pulse || '0',
           notes,
+          measuredAt: date.toISOString(),
         });
       }
       router.back();

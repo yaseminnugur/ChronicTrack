@@ -46,6 +46,7 @@ export default function AddDiabetesScreen() {
           glucose,
           mealState,
           notes,
+          measuredAt: date.toISOString(),
         });
       }
       router.back();

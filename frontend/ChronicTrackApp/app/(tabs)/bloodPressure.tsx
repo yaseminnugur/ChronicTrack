@@ -72,15 +72,18 @@ export default function BloodPressureListScreen() {
     }, [dateRange])
   );
 
+  const isFiltered = !!(dateRange.startDate || dateRange.endDate);
+
   const groupData = () => {
     const groups: any = {};
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    let todaySysSum = 0;
-    let todayDiaSum = 0;
-    let todayCount = 0;
+    // Tarih filtresi varsa ortalama tüm görünür kayıtlar üzerinden.
+    let summarySysSum = 0;
+    let summaryDiaSum = 0;
+    let summaryCount = 0;
 
     records.forEach((item) => {
       const d = new Date(item.measuredAt);
@@ -90,14 +93,18 @@ export default function BloodPressureListScreen() {
       const dia = Number(item.diastolic);
 
       let dateGroup = dateStr;
-      if (d.toDateString() === today.toDateString()) {
+      const isToday = d.toDateString() === today.toDateString();
+      if (isToday) {
         dateGroup = 'Bugün, ' + dateStr;
-        todaySysSum += sys;
-        todayDiaSum += dia;
-        todayCount++;
       }
       else if (d.toDateString() === yesterday.toDateString()) {
         dateGroup = 'Dün, ' + dateStr;
+      }
+
+      if (isFiltered || isToday) {
+        summarySysSum += sys;
+        summaryDiaSum += dia;
+        summaryCount++;
       }
 
       if (!groups[dateGroup]) groups[dateGroup] = [];
@@ -118,8 +125,8 @@ export default function BloodPressureListScreen() {
       });
     });
 
-    const avgSys = todayCount > 0 ? Math.round(todaySysSum / todayCount) : null;
-    const avgDia = todayCount > 0 ? Math.round(todayDiaSum / todayCount) : null;
+    const avgSys = summaryCount > 0 ? Math.round(summarySysSum / summaryCount) : null;
+    const avgDia = summaryCount > 0 ? Math.round(summaryDiaSum / summaryCount) : null;
 
     const formattedGroups = Object.keys(groups).map((key, index) => ({
       id: index.toString(),
@@ -127,15 +134,17 @@ export default function BloodPressureListScreen() {
       items: groups[key]
     }));
 
-    return { formattedGroups, avgSys, avgDia };
+    return { formattedGroups, avgSys, avgDia, summaryCount };
   };
 
-  const { formattedGroups, avgSys, avgDia } = groupData();
+  const { formattedGroups, avgSys, avgDia, summaryCount } = groupData();
 
   const avgStatus = avgSys !== null && avgDia !== null
     ? getBloodPressureStatus(avgSys, avgDia)
     : null;
   const summaryCardColor = avgStatus?.color || colors.textTertiary;
+  const summaryTitle = isFiltered ? 'Seçilen Aralık Ortalaması' : 'Bugünkü Ortalama';
+  const summaryEmptyMessage = isFiltered ? 'Bu aralıkta kayıt yok' : 'Bugün Kayıt Yok';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -197,7 +206,10 @@ export default function BloodPressureListScreen() {
         {activeTab === 'Liste' ? (
           <View>
             <View style={[styles.summaryCard, { backgroundColor: summaryCardColor, shadowColor: summaryCardColor }]}>
-              <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
+              <ThemedText style={styles.summaryTitle}>
+                {summaryTitle}
+                {isFiltered && summaryCount > 0 ? ` · ${summaryCount} ölçüm` : ''}
+              </ThemedText>
               <View style={styles.summaryValueRow}>
                 <ThemedText style={styles.summaryValue}>{avgSys !== null ? `${avgSys}/${avgDia}` : '--/--'}</ThemedText>
                 <ThemedText style={styles.summaryUnit}>mmHg</ThemedText>
@@ -211,7 +223,7 @@ export default function BloodPressureListScreen() {
                   </View>
                 ) : (
                   <View style={styles.pillNormal}>
-                    <ThemedText style={styles.pillNormalText}>Bugün Kayıt Yok</ThemedText>
+                    <ThemedText style={styles.pillNormalText}>{summaryEmptyMessage}</ThemedText>
                   </View>
                 )}
               </View>

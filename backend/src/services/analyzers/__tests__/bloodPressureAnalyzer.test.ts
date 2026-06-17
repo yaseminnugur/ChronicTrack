@@ -87,6 +87,39 @@ describe('analyzeBloodPressure', () => {
     expect(result.riskLevel).toBe('CRITICAL');
   });
 
+  it('downgrades hypertensive crisis to HIGH (resolved) after >=3 stable readings', () => {
+    // En eski → en yeni: kriz (190/125) → 3 ardışık stage1-altı ölçüm.
+    // Tüm ölçümler 7 günlük pencere içinde.
+    const records = [
+      { systolic: 190, diastolic: 125, pulse: 90, measuredAt: daysAgo(6) },
+      { systolic: 128, diastolic: 82, pulse: 75, measuredAt: daysAgo(5) },
+      { systolic: 122, diastolic: 78, pulse: 72, measuredAt: daysAgo(4) },
+      { systolic: 118, diastolic: 76, pulse: 70, measuredAt: daysAgo(3) },
+    ];
+    const result = analyzeBloodPressure(records, baseProfile);
+    expect(result.signals).toContain('hypertensive_crisis_resolved');
+    expect(result.signals).not.toContain('hypertensive_crisis');
+    expect(result.riskLevel).toBe('HIGH');
+    expect(result.criticalEvents.hypertensiveCrisis).not.toBeNull();
+    expect(result.criticalEvents.hypertensiveCrisis!.resolved).toBe(true);
+    expect(result.criticalEvents.hypertensiveCrisis!.stableReadingsSince).toBe(3);
+    expect(result.criticalEvents.hypertensiveCrisis!.lastValue).toBe(190);
+  });
+
+  it('keeps hypertensive crisis active (CRITICAL) when stable streak <3', () => {
+    const records = [
+      { systolic: 190, diastolic: 125, pulse: 90, measuredAt: daysAgo(5) },
+      { systolic: 128, diastolic: 82, pulse: 75, measuredAt: daysAgo(3) },
+      { systolic: 122, diastolic: 78, pulse: 72, measuredAt: daysAgo(1) },
+    ];
+    const result = analyzeBloodPressure(records, baseProfile);
+    expect(result.signals).toContain('hypertensive_crisis');
+    expect(result.signals).not.toContain('hypertensive_crisis_resolved');
+    expect(result.riskLevel).toBe('CRITICAL');
+    expect(result.criticalEvents.hypertensiveCrisis!.resolved).toBe(false);
+    expect(result.criticalEvents.hypertensiveCrisis!.stableReadingsSince).toBe(2);
+  });
+
   it('detects morning hypertension when morning sys >= 135', () => {
     const records = [
       { systolic: 140, diastolic: 88, pulse: 80, measuredAt: daysAgo(1, 7) },
@@ -163,6 +196,7 @@ describe('analyzeBloodPressure', () => {
   });
 
   it('detects WORSENING trend when current avg notably higher than previous', () => {
+    // current periyot = son 7 gün, previous = 7-14 gün önceki periyot.
     const current = Array.from({ length: 5 }, (_, i) => ({
       systolic: 150,
       diastolic: 95,
@@ -173,7 +207,7 @@ describe('analyzeBloodPressure', () => {
       systolic: 120,
       diastolic: 78,
       pulse: 72,
-      measuredAt: daysAgo(35 + i),
+      measuredAt: daysAgo(8 + i),
     }));
     const result = analyzeBloodPressure([...current, ...previous], baseProfile);
     expect(result.trend).toBe('WORSENING');
@@ -191,7 +225,7 @@ describe('analyzeBloodPressure', () => {
       systolic: 145,
       diastolic: 92,
       pulse: 80,
-      measuredAt: daysAgo(35 + i),
+      measuredAt: daysAgo(8 + i),
     }));
     const result = analyzeBloodPressure([...current, ...previous], baseProfile);
     expect(result.trend).toBe('IMPROVING');

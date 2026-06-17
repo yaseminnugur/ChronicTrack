@@ -53,47 +53,55 @@ export default function DiabetesListScreen() {
     }, [dateRange])
   );
 
+  const isFiltered = !!(dateRange.startDate || dateRange.endDate);
+
   const groupData = () => {
     const groups: any = {};
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
-    let todaySum = 0;
-    let todayCount = 0;
+
+    // Tarih filtresi varsa ortalama tüm görünür kayıtlar üzerinden (backend zaten
+    // filtreyi uygulayıp gönderdi). Filtre yoksa sadece bugünün ortalaması.
+    let summarySum = 0;
+    let summaryCount = 0;
 
     records.forEach((item) => {
       const d = new Date(item.measuredAt);
       const dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
-      
+
       const glucoseVal = Number(item.glucose);
 
       let dateGroup = dateStr;
-      if (d.toDateString() === today.toDateString()) {
+      const isToday = d.toDateString() === today.toDateString();
+      if (isToday) {
          dateGroup = 'Bugün, ' + dateStr;
-         todaySum += glucoseVal;
-         todayCount++;
       }
       else if (d.toDateString() === yesterday.toDateString()) {
          dateGroup = 'Dün, ' + dateStr;
       }
-      
+
+      if (isFiltered || isToday) {
+        summarySum += glucoseVal;
+        summaryCount++;
+      }
+
       if (!groups[dateGroup]) groups[dateGroup] = [];
-      
+
       const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
       let type = 'normal';
       if (item.glucose > 140) type = 'high';
       else if (item.glucose < 70) type = 'danger';
-      
+
       let icon = 'tint';
       let iconFam = 'FontAwesome5';
       if (item.mealState === 'Yemek Öncesi') { icon = 'silverware-fork-knife'; iconFam = 'MaterialCommunityIcons'; }
       else if (item.mealState === 'Yemek Sonrası') { icon = 'silverware-fork-knife'; iconFam = 'MaterialCommunityIcons'; }
       else if (item.mealState === 'Uyku Öncesi') { icon = 'moon'; iconFam = 'Ionicons'; }
       else if (item.mealState === 'Açlık') { icon = 'food-off'; iconFam = 'MaterialCommunityIcons'; }
-      
+
       const glucoseStatus = getBloodSugarStatus(glucoseVal);
-      
+
       groups[dateGroup].push({
         id: item.id,
         title: item.mealState || 'Ölçüm',
@@ -107,21 +115,23 @@ export default function DiabetesListScreen() {
       });
     });
 
-    const averageToday = todayCount > 0 ? Math.round(todaySum / todayCount) : null;
-    
+    const summaryAverage = summaryCount > 0 ? Math.round(summarySum / summaryCount) : null;
+
     const formattedGroups = Object.keys(groups).map((key, index) => ({
       id: index.toString(),
       dateGroup: key,
       items: groups[key]
     }));
 
-    return { formattedGroups, averageToday };
+    return { formattedGroups, summaryAverage, summaryCount };
   };
 
-  const { formattedGroups, averageToday } = groupData();
+  const { formattedGroups, summaryAverage, summaryCount } = groupData();
 
-  const avgStatus = averageToday !== null ? getBloodSugarStatus(averageToday) : null;
+  const avgStatus = summaryAverage !== null ? getBloodSugarStatus(summaryAverage) : null;
   const summaryCardColor = avgStatus?.color || colors.textTertiary;
+  const summaryTitle = isFiltered ? 'Seçilen Aralık Ortalaması' : 'Bugünkü Ortalama';
+  const summaryEmptyMessage = isFiltered ? 'Bu aralıkta kayıt yok' : 'Bugün Kayıt Yok';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -184,9 +194,12 @@ export default function DiabetesListScreen() {
           <View>
             {/* Big Summary Card */}
             <View style={[styles.summaryCard, { backgroundColor: summaryCardColor, shadowColor: summaryCardColor }]}>
-              <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
+              <ThemedText style={styles.summaryTitle}>
+                {summaryTitle}
+                {isFiltered && summaryCount > 0 ? ` · ${summaryCount} ölçüm` : ''}
+              </ThemedText>
               <View style={styles.summaryValueRow}>
-                <ThemedText style={styles.summaryValue}>{averageToday !== null ? averageToday : '--'}</ThemedText>
+                <ThemedText style={styles.summaryValue}>{summaryAverage !== null ? summaryAverage : '--'}</ThemedText>
                 <ThemedText style={styles.summaryUnit}>mg/dL</ThemedText>
               </View>
 
@@ -198,7 +211,7 @@ export default function DiabetesListScreen() {
                   </View>
                 ) : (
                   <View style={styles.pillNormal}>
-                    <ThemedText style={styles.pillNormalText}>Bugün Kayıt Yok</ThemedText>
+                    <ThemedText style={styles.pillNormalText}>{summaryEmptyMessage}</ThemedText>
                   </View>
                 )}
               </View>

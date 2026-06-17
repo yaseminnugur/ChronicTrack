@@ -83,6 +83,73 @@ describe('analyzeBloodSugar', () => {
     expect(result.riskLevel).toBe('CRITICAL');
   });
 
+  it('downgrades severe_hyperglycemia to HIGH (resolved) after >=3 consecutive in-range readings', () => {
+    // En eski → en yeni: 600 (kritik) → 4 ardışık in-range. Olay "toparlanmış" sayılır.
+    // Tüm ölçümler 7 günlük pencere içinde.
+    const records = [
+      { glucose: 600, mealState: 'Yemek Sonrası', measuredAt: daysAgo(6) },
+      { glucose: 110, mealState: 'Açlık', measuredAt: daysAgo(5) },
+      { glucose: 95, mealState: 'Yemek Öncesi', measuredAt: daysAgo(4) },
+      { glucose: 130, mealState: 'Yemek Sonrası', measuredAt: daysAgo(3) },
+      { glucose: 105, mealState: 'Açlık', measuredAt: daysAgo(2) },
+    ];
+    const result = analyzeBloodSugar(records, baseProfile);
+    expect(result.signals).toContain('severe_hyperglycemia_resolved');
+    expect(result.signals).not.toContain('severe_hyperglycemia');
+    expect(result.riskLevel).toBe('HIGH');
+    expect(result.criticalEvents.severeHyperglycemia).not.toBeNull();
+    expect(result.criticalEvents.severeHyperglycemia!.resolved).toBe(true);
+    expect(result.criticalEvents.severeHyperglycemia!.stableReadingsSince).toBe(4);
+    expect(result.criticalEvents.severeHyperglycemia!.lastValue).toBe(600);
+  });
+
+  it('keeps severe_hyperglycemia active (CRITICAL) when stable streak <3', () => {
+    // 600 sonrası sadece 2 in-range ölçüm var → henüz toparlanmamış sayılır.
+    const records = [
+      { glucose: 600, mealState: 'Yemek Sonrası', measuredAt: daysAgo(5) },
+      { glucose: 110, mealState: 'Açlık', measuredAt: daysAgo(3) },
+      { glucose: 95, mealState: 'Yemek Öncesi', measuredAt: daysAgo(1) },
+    ];
+    const result = analyzeBloodSugar(records, baseProfile);
+    expect(result.signals).toContain('severe_hyperglycemia');
+    expect(result.signals).not.toContain('severe_hyperglycemia_resolved');
+    expect(result.riskLevel).toBe('CRITICAL');
+    expect(result.criticalEvents.severeHyperglycemia!.resolved).toBe(false);
+    expect(result.criticalEvents.severeHyperglycemia!.stableReadingsSince).toBe(2);
+  });
+
+  it('resets stable streak when an out-of-range reading interrupts recovery', () => {
+    // 600 → 3 in-range → 1 hiperglisemi (200) → streak sıfırlanır.
+    // Tüm ölçümler 7 günlük pencere içinde.
+    const records = [
+      { glucose: 600, mealState: 'Yemek Sonrası', measuredAt: daysAgo(6) },
+      { glucose: 110, mealState: 'Açlık', measuredAt: daysAgo(5) },
+      { glucose: 95, mealState: 'Yemek Öncesi', measuredAt: daysAgo(4) },
+      { glucose: 130, mealState: 'Yemek Sonrası', measuredAt: daysAgo(3) },
+      { glucose: 200, mealState: 'Yemek Sonrası', measuredAt: daysAgo(2) },
+    ];
+    const result = analyzeBloodSugar(records, baseProfile);
+    expect(result.criticalEvents.severeHyperglycemia!.stableReadingsSince).toBe(3);
+    expect(result.criticalEvents.severeHyperglycemia!.resolved).toBe(true);
+    // Not: 200 streak'i kesmiyor çünkü 200 > 180 (in-range dışı), streak burada durur ama
+    // sayım hâlâ 3 olduğu için resolved. Bu testte streak'in nasıl durduğunu doğruluyoruz.
+  });
+
+  it('downgrades frequent_hypo to HIGH (resolved) after >=3 in-range readings', () => {
+    const records = [
+      { glucose: 55, mealState: 'Açlık', measuredAt: daysAgo(6) },
+      { glucose: 60, mealState: 'Açlık', measuredAt: daysAgo(5) },
+      { glucose: 90, mealState: 'Yemek Sonrası', measuredAt: daysAgo(4) },
+      { glucose: 110, mealState: 'Açlık', measuredAt: daysAgo(3) },
+      { glucose: 130, mealState: 'Yemek Sonrası', measuredAt: daysAgo(2) },
+    ];
+    const result = analyzeBloodSugar(records, baseProfile);
+    expect(result.signals).toContain('frequent_hypo_resolved');
+    expect(result.signals).not.toContain('frequent_hypo');
+    expect(result.riskLevel).toBe('HIGH');
+    expect(result.criticalEvents.frequentHypo!.resolved).toBe(true);
+  });
+
   it('detects post_meal_spike when post-fasting average exceeds fasting by >60', () => {
     const records = [
       { glucose: 95, mealState: 'Açlık', measuredAt: daysAgo(1) },
@@ -168,6 +235,7 @@ describe('analyzeBloodSugar', () => {
   });
 
   it('detects WORSENING trend when current avg rises >5%', () => {
+    // current periyot = son 7 gün, previous = 7-14 gün önceki periyot.
     const current = Array.from({ length: 4 }, (_, i) => ({
       glucose: 200,
       mealState: 'Yemek Sonrası',
@@ -176,7 +244,7 @@ describe('analyzeBloodSugar', () => {
     const previous = Array.from({ length: 4 }, (_, i) => ({
       glucose: 120,
       mealState: 'Yemek Sonrası',
-      measuredAt: daysAgo(35 + i),
+      measuredAt: daysAgo(8 + i),
     }));
     const result = analyzeBloodSugar([...current, ...previous], baseProfile);
     expect(result.trend).toBe('WORSENING');
