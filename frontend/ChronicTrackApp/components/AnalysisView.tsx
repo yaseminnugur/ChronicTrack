@@ -6,6 +6,7 @@ import { useColors } from '@/context/ThemeContext';
 import type { ColorPalette } from '@/constants/theme';
 import {
   getAnalysis,
+  refreshAnalysis,
   type AnalysisResult,
   type AnalysisType,
   type RiskLevel,
@@ -48,6 +49,20 @@ export default function AnalysisView({ analysisType, dataVersion = 0 }: Analysis
     }
   }, [analysisType]);
 
+  const triggerRefresh = useCallback(async () => {
+    if (refreshing) return;
+    try {
+      setError(null);
+      setRefreshing(true);
+      const res = await refreshAnalysis(analysisType);
+      setData(res);
+    } catch (e: any) {
+      setError(e?.response?.data?.error || 'Analiz yenilenemedi');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [analysisType, refreshing]);
+
   // Mount + dataVersion değiştikçe yenile. dataVersion parent'ın useFocusEffect'inde
   // ölçüm listesi tazelendikten sonra bumplanır → yeni veri eklenince tetiklenir.
   useEffect(() => {
@@ -82,6 +97,23 @@ export default function AnalysisView({ analysisType, dataVersion = 0 }: Analysis
 
   return (
     <View style={styles.container}>
+
+      {/* Şimdi Analiz Et Butonu */}
+      <TouchableOpacity
+        style={[styles.analyzeNowBtn, refreshing && styles.analyzeNowBtnDisabled]}
+        activeOpacity={0.8}
+        onPress={triggerRefresh}
+        disabled={refreshing}
+      >
+        {refreshing ? (
+          <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+        ) : (
+          <Ionicons name="sparkles" size={16} color="#FFF" style={{ marginRight: 8 }} />
+        )}
+        <ThemedText style={styles.analyzeNowBtnText}>
+          {refreshing ? 'Analiz Ediliyor…' : 'Şimdi Analiz Et'}
+        </ThemedText>
+      </TouchableOpacity>
 
       {/* Genel Sağlık Riski Card */}
       <View style={styles.riskCard}>
@@ -351,6 +383,30 @@ const createStyles = (c: ColorPalette) => StyleSheet.create({
     color: '#FFF',
     fontWeight: '700',
     fontSize: 13,
+  },
+  analyzeNowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0EA5E9',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginBottom: 16,
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  analyzeNowBtnDisabled: {
+    opacity: 0.7,
+  },
+  analyzeNowBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   riskCard: {
     backgroundColor: c.surfaceMuted,

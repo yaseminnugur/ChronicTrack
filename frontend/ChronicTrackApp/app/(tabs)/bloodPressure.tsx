@@ -10,6 +10,7 @@ import AnalysisView from '@/components/AnalysisView';
 import { getBloodPressureStatus } from '../../utils/healthStatusUtils';
 import { getBloodPressures } from '../../services/healthService';
 import { getUserProfile } from '../../services/userService';
+import { getAnalysis } from '../../services/aiAnalysisService';
 import DateRangePicker from '@/components/DateRangePicker';
 
 export default function BloodPressureListScreen() {
@@ -20,6 +21,7 @@ export default function BloodPressureListScreen() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{ startDate?: string, endDate?: string }>({});
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
   // AnalysisView'ı yeniden tetiklemek için sayaç. Her odak/yenileme sonrası bumplar.
   const [dataVersion, setDataVersion] = useState(0);
 
@@ -56,6 +58,10 @@ export default function BloodPressureListScreen() {
 
           setRecords(allRecords);
           setDataVersion((v) => v + 1);
+
+          getAnalysis('BLOOD_PRESSURE')
+            .then((res) => setAiSummary(res?.ai?.summary || null))
+            .catch(() => setAiSummary(null));
         } catch (e) {
           console.error(e);
         } finally {
@@ -126,6 +132,11 @@ export default function BloodPressureListScreen() {
 
   const { formattedGroups, avgSys, avgDia } = groupData();
 
+  const avgStatus = avgSys !== null && avgDia !== null
+    ? getBloodPressureStatus(avgSys, avgDia)
+    : null;
+  const summaryCardColor = avgStatus?.color || colors.textTertiary;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
 
@@ -185,7 +196,7 @@ export default function BloodPressureListScreen() {
 
         {activeTab === 'Liste' ? (
           <View>
-            <View style={[styles.summaryCard, { backgroundColor: '#E11D48', shadowColor: '#E11D48' }]}>
+            <View style={[styles.summaryCard, { backgroundColor: summaryCardColor, shadowColor: summaryCardColor }]}>
               <ThemedText style={styles.summaryTitle}>Bugünkü Ortalama</ThemedText>
               <View style={styles.summaryValueRow}>
                 <ThemedText style={styles.summaryValue}>{avgSys !== null ? `${avgSys}/${avgDia}` : '--/--'}</ThemedText>
@@ -193,22 +204,26 @@ export default function BloodPressureListScreen() {
               </View>
 
               <View style={styles.summaryFooter}>
-                {avgSys !== null && avgDia !== null ? (
-                  (() => {
-                    const avgStatus = getBloodPressureStatus(avgSys, avgDia);
-                    return (
-                      <View style={[styles.pillStatus, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                        <Ionicons name={avgStatus.icon as any} size={12} color="#FFF" />
-                        <ThemedText style={styles.pillNormalText}>{avgStatus.label}</ThemedText>
-                      </View>
-                    );
-                  })()
+                {avgStatus ? (
+                  <View style={[styles.pillStatus, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                    <Ionicons name={avgStatus.icon as any} size={12} color="#FFF" />
+                    <ThemedText style={styles.pillNormalText}>{avgStatus.label}</ThemedText>
+                  </View>
                 ) : (
                   <View style={styles.pillNormal}>
                     <ThemedText style={styles.pillNormalText}>Bugün Kayıt Yok</ThemedText>
                   </View>
                 )}
               </View>
+
+              {aiSummary && (
+                <View style={styles.aiSummaryRow}>
+                  <Ionicons name="sparkles" size={12} color="rgba(255,255,255,0.9)" style={{ marginRight: 6, marginTop: 2 }} />
+                  <ThemedText style={styles.aiSummaryText} numberOfLines={3}>
+                    {aiSummary}
+                  </ThemedText>
+                </View>
+              )}
             </View>
 
             {formattedGroups.length > 0 ? (
@@ -327,15 +342,28 @@ const createStyles = (c: ColorPalette) => StyleSheet.create({
     color: c.textTertiary,
   },
   summaryCard: {
-    backgroundColor: '#E11D48',
     borderRadius: 24,
     padding: 24,
     marginBottom: 32,
-    shadowColor: '#E11D48',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 6,
+  },
+  aiSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.18)',
+  },
+  aiSummaryText: {
+    flex: 1,
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 16,
   },
   summaryTitle: {
     fontSize: 13,
